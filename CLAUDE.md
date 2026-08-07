@@ -1,0 +1,239 @@
+# 食物旅行 (FoodJourney)
+
+一个 iOS **教育科普类** App，通过消化道剖面图动画，直观展示食物在身体内的代谢过程。
+
+## 产品定位
+
+- **定位：纯教育科普类**（已于 2026-08 从早期的"健康记录类"转型）
+- 目标用户：想了解食物在身体内发生了什么的普通用户
+- **无账号、无健康数据采集、无个人档案**——转型后移除了 Supabase 登录、HealthKit 读取、用户档案等功能
+- 非医疗用途，文案只用"了解/查看/学习"，不做医疗声明
+- App Store 类目：Health & Fitness（展示用途，非健康记录工具）
+
+## 产品转型说明（2026-08）
+
+项目最初设计为带用户体系的健康工具（注册登录 + HealthKit + 用户档案）。
+经审视后转型为**纯教育科普类**：核心价值是"看懂一顿饭在体内如何代谢"，不需要任何用户数据沉淀。
+
+由此产生的清理工作（见下方"待办事项"）：
+- 移除认证 / 档案 / 健康数据相关代码（`LoginView`、`ProfileView`、`UserProfile`、`SupabaseService`、`HealthKitService` 等）
+- 保留并聚焦三屏核心教育链路：食物输入 → 消化路径可视化 → 代谢总结
+
+## App 结构（已实现）
+
+### 三屏核心流程
+```
+屏1: 今天午餐（食物输入）
+  ↓ 点"食物产出表现"
+屏2: 消化路径（核心功能）
+  ↓ 点"查看总结→"
+屏3: 代谢总结
+```
+
+### 导航
+- `NavigationStack + NavigationPath`（线性流程，无 TabBar）
+- `Meal` 对象作为跨屏共享状态
+
+## 技术栈
+
+- **UI 框架**：SwiftUI（iOS 原生）
+- **最低支持**：iOS 17.0
+- **架构**：MVVM
+- **响应式**：`@Observable`（iOS 17 Observation Framework）与 `@Published`/`@StateObject` 混用（历史遗留，见下方"本轮工作约束"）
+- **并发**：Strict Concurrency, @MainActor
+- **构建设置**：`SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, `SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES`
+- **Color System**：自适应 Light/Dark，Theme.swift 集中管理
+
+> 已转型移除：Supabase（认证与数据）、HealthKit（健康数据读取）。
+
+## 项目结构
+
+```
+FoodJourney/
+├── App/                    # App 入口
+├── Views/
+│   ├── Digestive/          # 消化道剖面图与动画（核心屏2）
+│   ├── FoodInput/          # 食物输入（屏1）—— 含 FoodInfoCardView 待接入
+│   ├── Summary/            # 代谢总结（屏3）
+│   ├── Auth/LoginView      # ⚠️ 删除候选（转型后无用）
+│   └── Profile/ProfileView # ⚠️ 删除候选（转型后无用）
+├── ViewModels/
+├── Models/
+│   ├── Food / FoodItem / Meal / Organ / OrganTag
+│   ├── DigestionPath       # Catmull-Rom 样条路径 + 肝脏分支
+│   ├── MetabolismResult
+│   ├── Screen              # 导航路由枚举
+│   └── UserProfile         # ⚠️ 删除候选（转型后无用）
+├── Services/
+│   ├── DigestionEngine/    # 消化逻辑与粒子系统（核心，勿大改）
+│   ├── FoodDatabase/       # 硬编码食物数据库
+│   ├── MetabolismEngine/   # 代谢计算引擎（含待修蛋白质 bug）
+│   ├── SupabaseService/    # ⚠️ 删除候选（转型后无用）
+│   └── HealthKitService/   # ⚠️ 删除候选（转型后无用）
+└── Resources/
+    ├── Theme.swift
+    └── Assets.xcassets
+```
+
+## 高优先级 Bug
+
+### 蛋白质代谢计算 bug（本轮 #1 优先级）✅ 已修复
+- 位置：`Services/MetabolismEngine/MetabolismEngine.swift`
+- 问题：蛋白质 ATP 系数 `0.05 mol/g` 偏低。碳水(0.105)、脂肪(0.237) 换算成每 kcal 产 ATP 均约 0.0263 mol/kcal，而 0.05 对应仅 0.0125 mol/kcal，约为前者一半，与"脱氨仅损耗 20-30%"的生理事实不符
+- 修复：`0.05 → 0.085`（4 kcal/g × 脱氨净产 ~0.85 × 0.0263 ≈ 0.085），使三大营养素每 kcal 产 ATP 一致
+- 影响范围：屏3 能量代谢卡片的 ATP 数值（蛋白质占比高的餐食影响最明显）
+- 约束：仅改此系数，未重构 MetabolismEngine 其他部分
+
+## 待办事项（本轮范围：第 1–3 项）
+
+1. **修复蛋白质代谢计算 bug**（见上）✅ 已完成
+2. **删除转型后的冗余代码**：`LoginView`、`ProfileView`、`UserProfile`、`SupabaseService`、`HealthKitService` 等 ✅ 已完成
+   - 全局搜索确认零外部引用；且这些文件未注册进 `project.pbxproj`（本就是死代码），删除不碰工程文件
+3. **接入 `FoodInfoCardView`**（FoodInput 屏的待接组件）
+
+### 不在本轮范围（单开一轮）
+- **食物数据库扩展**：需专门决策数据来源与审核机制，不与本轮收尾工作混批。
+
+## 本轮工作约束（重要 —— 勿自作主张）
+
+以下三点是项目所有者明确强调的红线：
+
+1. **消化道可视化核心链路，除蛋白质 bug 外不要大改**
+   - 涉及：`DigestiveView` / `DigestiveCanvasView` / `DigestionCanvasRenderer` / `DigestionPath` / `ParticleSystem` / `Particle` / `DigestionViewModel` / `Organ`
+   - 这条链路是项目里**唯一完整跑通、且逐行验证过**的部分
+   - **不要**因为 `DigestionViewModel` 用旧写法（`@Published`/`@StateObject`）而 `FoodInputView` 用新写法（`@Observable`）就主动提议"统一风格重构"
+   - 风格统一重构留到所有新功能与转型清理完成之后，**单独一轮**做；本轮只在修 bug 时触碰此链路
+
+2. **删除清单执行前，先全局搜索引用**
+   - 待删文件（`UserProfile`、`ProfileView`、`LoginView`、`SupabaseService`、`HealthKitService` 等）的"未引用"结论是基于已看过的文件推断的，**未做过项目级全局搜索**
+   - 删除前必须 `grep`/全局搜索这些类名与文件名，确认无遗漏引用，避免删出编译错误
+
+3. **食物数据库扩展不在本轮做**
+   - 不要"顺手扩充食物数据库"——这是需要专门决策数据来源、审核机制的独立课题
+   - 本轮只处理待办第 1–4 项
+
+## 视觉设计规范
+
+### 深色模式（屏2）
+- 背景：`#0d0d1a`
+- 表面/卡片：`#111128`
+- 躯干轮廓：`#1c1c38`（填充）+ `#2e2e55`（描边 1pt）
+- 管道：外层 `#2a2a55` 5pt + 内层 `#1a1a3a` 2pt（形成管道效果）
+- 主色：`#0F6E56`（导航栏、选中态、强调色）
+- 主色浅：`#9FE1CB`
+
+### 浅色模式（屏1、屏3）
+- 背景：`#F1EFE8`
+- 表面/卡片：`#FFFFFF`
+- 主色：`#0F6E56`
+
+### 营养素颜色（固定，不自适应）
+- 碳水：`#EF9F27`（橙色）
+- 脂肪：`#D85A30`（红色）
+- 蛋白质：`#1D9E75`（绿色）
+
+## 屏1: 今天午餐
+
+- 导航栏：标题"今天午餐"，副标题"点击食物查看代谢路径"，绿色背景
+- 食物 Chip 区域：流式布局，选中=深绿填充，显示克重
+- 克重调节器：选中食物时出现 stepper，范围 25g-500g
+- 三大营养素进度条：碳水/脂肪/蛋白质，右侧显示克数
+- 总热量栏：底部固定
+- **"食物产出表现"**按钮：选中食物后出现，点击进入屏2
+
+### 数据流
+- `Meal` 对象作为 `@State` 在 `ContentView` 创建
+- `FoodInputView` 修改 `Meal.items`（添加/删除/调克重）
+- `Meal` 计算总营养素、总热量、主营养类型
+
+## 屏2: 消化路径（核心）
+
+### Canvas 绘制（240×370 坐标系，自动缩放填满屏幕）
+1. 人体轮廓剪影（深色）
+2. 消化道路径：双描边管道效果
+3. 6 个器官椭圆（口腔、食道、胃、肝脏、小肠、大肠）
+4. 时间标注虚线（右侧）
+5. 粒子动画：8 个粒子沿路径流动
+
+### 粒子系统
+- **6 个主路径粒子**：口腔→食道→胃→小肠→大肠
+- **1 个门静脉分支粒子**：小肠→肝脏，虚线路径
+- **1 个肝脏回流粒子**：肝脏→小肠区域
+- 分支路径粒子稍小、稍透明，区分主次
+- 粒子颜色随营养类型切换
+
+### 器官交互
+- 点击器官：底部面板展开该器官的代谢说明 + 标签
+- 标签格式：`酶：xxx` / `产物：xxx` / `过程：xxx`
+- 选中时器官名称变白 + 虚线高亮描边
+- 点击空白处取消选中
+
+### 导航栏
+- 标题："消化路径"
+- 副标题：动态显示选中食物名称
+- 右侧："进行中" 绿色 badge
+- 右上角：**"查看总结 →"** 按钮，点击进入屏3
+
+## 屏3: 代谢总结
+
+### 能量代谢卡片
+- ATP 数值：大号等宽字体 + "mol ATP" 单位
+- 总热量：来自餐食
+- 血糖负荷等级：低/中/高（彩色 badge）
+- 胰岛素响应等级：低/中/高（彩色 badge）
+
+### 代谢物列表
+- CO₂：图标 + 彩色进度条 + 状态（正常/中等/偏高）
+- 水：同上
+- 尿酸：同上
+
+### 饮食建议
+- 自然语言段落，基于营养素组合生成
+
+## 代谢计算逻辑（当前公式，蛋白质部分含待修 bug）
+
+### ATP 产量
+- 碳水 1g → ~0.105 mol ATP
+- 脂肪 1g → ~0.237 mol ATP
+- 蛋白质 1g → ~0.085 mol ATP（脱氨后净产，已修复）
+
+### 代谢产物
+- CO₂：碳水 1.07g/g，脂肪 2.8g/g，蛋白质 0.8g/g
+- 水：碳水 0.6g/g，脂肪 1.07g/g，蛋白质 0.4g/g
+- 尿酸：蛋白质 50mg/g
+
+### 等级判定
+- 血糖负荷：<20g 低，20-50g 中，>50g 高
+- 胰岛素响应：综合碳水比例 + 脂肪/蛋白比
+
+> 注：屏3 的 CO₂/水/尿酸状态阈值与进度条分母目前写死在 `MetabolismSummaryView`，未与引擎打通，维护时注意同步。
+
+## 食物数据库（硬编码）
+
+12 种常见中国食物，每项含 per-100g 营养数据：
+米饭、馒头、面条、鸡胸肉、红烧肉、三文鱼、豆腐、鸡蛋、西兰花、苹果、牛奶、香蕉
+
+默认克重：牛奶 250g、鸡蛋 60g、水果 150g、其他 200g。
+
+## 设计原则
+
+- 深色背景 + 解剖图谱风格（屏2保持深色）
+- 系统自适应深色/浅色模式（屏1、屏3）
+- 文案："了解/查看/学习"而非医疗声明
+- 动画流畅，交互直觉化
+- MVVM 架构，SwiftUI 纯原生
+
+## 编译与运行
+
+- Xcode 26.5
+- 目标：iOS Simulator（需 iOS 26.5 Runtime）
+- 编译：`xcodebuild -project FoodJourney.xcodeproj -scheme FoodJourney -destination 'platform=iOS Simulator,name=iPhone 16' build`
+
+---
+
+## 待确认事项
+
+均已确认：
+1. ✅ 蛋白质 bug 已修复（ATP 0.05 → 0.085）
+2. ✅ 本轮范围调整为第 1–3 项（原第 4 项取消）
+3. ✅ 删除清单完整：`LoginView`/`ProfileView`/`UserProfile`/`SupabaseService`/`HealthKitService`
