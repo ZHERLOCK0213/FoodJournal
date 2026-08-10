@@ -22,6 +22,16 @@ struct FoodItem: Identifiable {
         food.proteinPer100g * grams / 100.0
     }
 
+    /// 膳食纤维克数（结构性不可吸收 → 大肠残留）
+    var fiberGrams: Double {
+        food.fiberPer100g * grams / 100.0
+    }
+
+    /// 乳糖克数（乳糖酶不足时结构性不可吸收 → 大肠残留）
+    var lactoseGrams: Double {
+        food.lactosePer100g * grams / 100.0
+    }
+
     /// 热量（kcal）
     var calories: Double {
         food.caloriesPer100g * grams / 100.0

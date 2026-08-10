@@ -32,47 +32,58 @@ struct DigestionCanvasRenderer {
     static let canvasWidth: CGFloat = 240
     static let canvasHeight: CGFloat = 370
 
-    // MARK: - 绘制人体轮廓
+    // MARK: - 绘制人体轮廓（标准人体透明剖面，对称，半透明填充使脏器可见）
 
     static func drawBodyOutline(context: GraphicsContext) {
+        // 以 x=120 为中轴对称；头部→颈→肩→躯干→髋→下身，240×370 坐标系
         let path = Path { p in
-            p.move(to: CGPoint(x: 70, y: 10))
-            p.addCurve(
-                to: CGPoint(x: 50, y: 130),
-                control1: CGPoint(x: 58, y: 30),
-                control2: CGPoint(x: 52, y: 80)
-            )
-            p.addCurve(
-                to: CGPoint(x: 54, y: 280),
-                control1: CGPoint(x: 48, y: 180),
-                control2: CGPoint(x: 50, y: 230)
-            )
-            p.addCurve(
-                to: CGPoint(x: 62, y: 360),
-                control1: CGPoint(x: 57, y: 320),
-                control2: CGPoint(x: 60, y: 345)
-            )
-            p.addLine(to: CGPoint(x: 178, y: 360))
-            p.addCurve(
-                to: CGPoint(x: 186, y: 280),
-                control1: CGPoint(x: 180, y: 345),
-                control2: CGPoint(x: 183, y: 320)
-            )
-            p.addCurve(
-                to: CGPoint(x: 190, y: 130),
-                control1: CGPoint(x: 190, y: 230),
-                control2: CGPoint(x: 192, y: 180)
-            )
-            p.addCurve(
-                to: CGPoint(x: 170, y: 10),
-                control1: CGPoint(x: 188, y: 80),
-                control2: CGPoint(x: 182, y: 30)
-            )
+            p.move(to: CGPoint(x: 120, y: 6))
+            // 头右侧 → 下颌
+            p.addCurve(to: CGPoint(x: 138, y: 50),
+                       control1: CGPoint(x: 134, y: 6), control2: CGPoint(x: 140, y: 28))
+            // 颈
+            p.addCurve(to: CGPoint(x: 132, y: 68),
+                       control1: CGPoint(x: 136, y: 56), control2: CGPoint(x: 134, y: 62))
+            // 肩
+            p.addCurve(to: CGPoint(x: 184, y: 92),
+                       control1: CGPoint(x: 138, y: 74), control2: CGPoint(x: 168, y: 80))
+            // 躯干右侧 → 腰
+            p.addCurve(to: CGPoint(x: 170, y: 214),
+                       control1: CGPoint(x: 188, y: 150), control2: CGPoint(x: 178, y: 190))
+            // 髋
+            p.addCurve(to: CGPoint(x: 176, y: 292),
+                       control1: CGPoint(x: 166, y: 240), control2: CGPoint(x: 174, y: 268))
+            // 下身
+            p.addCurve(to: CGPoint(x: 158, y: 362),
+                       control1: CGPoint(x: 180, y: 330), control2: CGPoint(x: 172, y: 354))
+            // 底部
+            p.addLine(to: CGPoint(x: 82, y: 362))
+            // 左侧镜像
+            p.addCurve(to: CGPoint(x: 64, y: 292),
+                       control1: CGPoint(x: 68, y: 354), control2: CGPoint(x: 60, y: 330))
+            p.addCurve(to: CGPoint(x: 70, y: 214),
+                       control1: CGPoint(x: 66, y: 268), control2: CGPoint(x: 74, y: 240))
+            p.addCurve(to: CGPoint(x: 56, y: 92),
+                       control1: CGPoint(x: 62, y: 190), control2: CGPoint(x: 52, y: 150))
+            p.addCurve(to: CGPoint(x: 108, y: 68),
+                       control1: CGPoint(x: 72, y: 80), control2: CGPoint(x: 102, y: 74))
+            p.addCurve(to: CGPoint(x: 102, y: 50),
+                       control1: CGPoint(x: 106, y: 62), control2: CGPoint(x: 104, y: 56))
+            p.addCurve(to: CGPoint(x: 120, y: 6),
+                       control1: CGPoint(x: 100, y: 28), control2: CGPoint(x: 106, y: 6))
             p.closeSubpath()
         }
 
-        context.fill(path, with: .color(bodyOutlineColor))
+        // 半透明填充：呈现"剖面"通透感，脏器在其上叠加绘制
+        context.fill(path, with: .color(bodyOutlineColor.opacity(0.55)))
         context.stroke(path, with: .color(bodyStrokeColor), lineWidth: 1.0)
+
+        // 颈部分隔细线（区分头与躯干的视觉提示）
+        var neck = Path()
+        neck.move(to: CGPoint(x: 104, y: 60))
+        neck.addLine(to: CGPoint(x: 136, y: 60))
+        context.stroke(neck, with: .color(bodyStrokeColor.opacity(0.5)),
+                       style: StrokeStyle(lineWidth: 0.5, dash: [2, 2]))
     }
 
     // MARK: - 绘制消化道路径
