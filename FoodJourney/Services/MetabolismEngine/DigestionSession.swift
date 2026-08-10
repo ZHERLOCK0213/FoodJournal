@@ -26,7 +26,7 @@ enum DigestiveOrgan: String, CaseIterable, Identifiable {
     var overloadSubstance: String {
         switch self {
         case .stomach:        return "未消化食物"
-        case .smallIntestine: return "吸收不良物"
+        case .smallIntestine: return "未吸收营养"
         case .liver:          return "脂肪"
         case .pancreas:       return "多余糖分"
         case .kidney:         return "尿酸"
@@ -227,7 +227,7 @@ final class DigestionSession {
             let lost = absorbable * (1 - absorptionEff)
             if lost > 0.01 {
                 residues.append(DigestionResidue(foodName: item.food.name, organ: .largeIntestine,
-                                                 substance: "吸收不良物", amount: lost, kind: .overload))
+                                                 substance: "未吸收营养", amount: lost, kind: .overload))
             }
         }
         // 脏器过载残留

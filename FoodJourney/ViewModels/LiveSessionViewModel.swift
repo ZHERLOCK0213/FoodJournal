@@ -9,6 +9,7 @@ struct OrganBubble: Identifiable {
     let side: Side
     let popThreshold: Double
     var hasPopped: Bool = false
+    var popProgress: Double = 0   // 弹出动画进度 0→1
     enum Side { case left, right }
 }
 
@@ -63,13 +64,13 @@ final class LiveSessionViewModel {
         lastTickDate = now
         switch phase {
         case .idle:
-            stopTimer(); return
+            break
         case .descending:
             progress += dt / 1.2
             if progress >= 1 { phase = .digesting; progress = 0 }
         case .digesting:
             progress += dt / 3.5
-            if progress >= 1 { progress = 1; phase = .idle; stopTimer() }
+            if progress >= 1 { progress = 1; phase = .idle }
         }
         // 泡泡随粒子到达脏器路径位置而弹（lead = 粒子前端 t 值）
         if phase == .digesting {
@@ -77,6 +78,14 @@ final class LiveSessionViewModel {
             for i in bubbles.indices where !bubbles[i].hasPopped && lead >= bubbles[i].popThreshold {
                 bubbles[i].hasPopped = true
             }
+        }
+        // 推进已弹泡泡的弹出动画（0→1，约 0.3s）
+        for i in bubbles.indices where bubbles[i].hasPopped && bubbles[i].popProgress < 1 {
+            bubbles[i].popProgress = min(1, bubbles[i].popProgress + dt / 0.3)
+        }
+        // 消化结束且所有泡泡动画跑完才停 timer
+        if phase == .idle && bubbles.allSatisfy({ !$0.hasPopped || $0.popProgress >= 1 }) {
+            stopTimer()
         }
     }
 

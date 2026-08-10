@@ -43,7 +43,7 @@ struct LiveSessionRenderer {
         context.fill(dot, with: .color(col))
         context.stroke(dot, with: .color(col.opacity(0.5)), lineWidth: 0.6)
         context.draw(
-            Text("—[\(r.foodName)]").font(.system(size: 7)).foregroundColor(Color(hex: "aaaacc")!),
+            Text("—[\(r.substance)]").font(.system(size: 7)).foregroundColor(Color(hex: "aaaacc")!),
             at: CGPoint(x: point.x + 7, y: point.y),
             anchor: .leading
         )
@@ -85,35 +85,43 @@ struct LiveSessionRenderer {
         return result
     }
 
-    /// 从泡泡到脏器的连线（虚线 + 脏器端小圆点）
-    static func drawConnection(from rect: CGRect, to organ: CGPoint, side: OrganBubble.Side, context: GraphicsContext) {
+    /// 从泡泡到脏器的连线（虚线 + 脏器端小圆点）；随泡泡弹出淡入
+    static func drawConnection(from rect: CGRect, to organ: CGPoint, side: OrganBubble.Side, progress: Double, context: GraphicsContext) {
+        let p = progress
         let start = side == .left
             ? CGPoint(x: rect.maxX, y: rect.midY)
             : CGPoint(x: rect.minX, y: rect.midY)
         var path = Path()
         path.move(to: start)
         path.addLine(to: organ)
-        context.stroke(path, with: .color(bubbleStroke.opacity(0.55)),
-                       style: StrokeStyle(lineWidth: 0.6, dash: [2, 2]))
-        let dot = Path(ellipseIn: CGRect(x: organ.x - 1.5, y: organ.y - 1.5, width: 3, height: 3))
-        context.fill(dot, with: .color(bubbleStroke))
+        context.stroke(path, with: .color(AppTheme.primaryLight.opacity(0.7 * p)),
+                       style: StrokeStyle(lineWidth: 0.9, dash: [3, 2]))
+        let dot = Path(ellipseIn: CGRect(x: organ.x - 2, y: organ.y - 2, width: 4, height: 4))
+        context.fill(dot, with: .color(AppTheme.primaryLight.opacity(p)))
     }
 
-    /// 画泡泡本体（标签 + 折行文本）
+    /// 画泡泡本体（标签 + 折行文本）；按 popProgress 缩放+淡入弹出
     static func drawBubble(_ b: OrganBubble, rect: CGRect, context: GraphicsContext) {
-        let path = Path(roundedRect: rect, cornerRadius: 6)
-        context.fill(path, with: .color(bubbleBg.opacity(0.95)))
-        context.stroke(path, with: .color(bubbleStroke), lineWidth: 0.8)
+        let p = b.popProgress
+        let ease = 1 - pow(1 - p, 3)          // easeOutCubic
+        let s = 0.5 + 0.5 * ease              // 0.5 → 1
+        let alpha = p
+        let w = rect.width * s, h = rect.height * s
+        let scaled = CGRect(x: rect.midX - w / 2, y: rect.midY - h / 2, width: w, height: h)
+
+        let path = Path(roundedRect: scaled, cornerRadius: 6)
+        context.fill(path, with: .color(bubbleBg.opacity(0.95 * alpha)))
+        context.stroke(path, with: .color(bubbleStroke.opacity(alpha)), lineWidth: 0.8)
         context.draw(
-            Text(b.organLabel).font(.system(size: 8, weight: .bold)).foregroundColor(AppTheme.primaryLight),
-            at: CGPoint(x: rect.midX, y: rect.minY + 9)
+            Text(b.organLabel).font(.system(size: 8, weight: .bold)).foregroundColor(AppTheme.primaryLight.opacity(alpha)),
+            at: CGPoint(x: scaled.midX, y: scaled.minY + 9)
         )
         let lines = bubbleLines(b.text)
         for (i, line) in lines.enumerated() {
-            let y = rect.minY + 22 + CGFloat(i) * 11
+            let y = scaled.minY + 22 + CGFloat(i) * 11
             context.draw(
-                Text(line).font(.system(size: 7)).foregroundColor(Color(hex: "ccccdd")!),
-                at: CGPoint(x: rect.midX, y: y)
+                Text(line).font(.system(size: 7)).foregroundColor(Color(hex: "ccccdd")!.opacity(alpha)),
+                at: CGPoint(x: scaled.midX, y: y)
             )
         }
     }

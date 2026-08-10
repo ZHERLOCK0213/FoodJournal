@@ -75,7 +75,7 @@ struct LiveSessionCanvasView: View {
             // 已弹出的产物泡泡：布局 → 连线 → 本体
             let popped = viewModel.bubbles.filter { $0.hasPopped }
             for (b, rect) in LiveSessionRenderer.layoutBubbles(popped) {
-                LiveSessionRenderer.drawConnection(from: rect, to: organPoint(for: b.organ), side: b.side, context: context)
+                LiveSessionRenderer.drawConnection(from: rect, to: organPoint(for: b.organ), side: b.side, progress: b.popProgress, context: context)
                 LiveSessionRenderer.drawBubble(b, rect: rect, context: context)
             }
         }
