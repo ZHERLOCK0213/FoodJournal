@@ -2,32 +2,26 @@ import SwiftUI
 
 /// live 会话画布渲染（复用 DigestionCanvasRenderer 的背景/路径/器官，新增动态层）
 struct LiveSessionRenderer {
-    // 胰腺、肾在 prototypeOrgans 之外，live 会话新增位置（240×370 坐标）
-    static let pancreas = (cx: CGFloat(70), cy: CGFloat(150), rx: CGFloat(14), ry: CGFloat(9))
-    static let kidney   = (cx: CGFloat(180), cy: CGFloat(215), rx: CGFloat(11), ry: CGFloat(17))
+    // 胰腺、肾：prototypeOrgans 之外的脏器，位置在身体轮廓内（240×370 坐标）
+    static let pancreasPos = (cx: CGFloat(78), cy: CGFloat(150))
+    static let kidneyPos   = (cx: CGFloat(168), cy: CGFloat(170))
 
-    static let pancreasColor = Color(hex: "5a4a3a")!
-    static let kidneyColor   = Color(hex: "3a2a4a")!
+    /// live 会话额外脏器（与 prototypeOrgans 同用 drawOrgan 绘制，风格统一）
+    static let liveExtraOrgans: [Organ] = [
+        Organ(id: "pancreas", label: "胰腺", cx: pancreasPos.cx, cy: pancreasPos.cy, rx: 13, ry: 8,
+              color: "#6a4a30", highlightColor: "#cc8855", time: nil,
+              detailTitle: nil, detailDesc: nil, detailTags: nil),
+        Organ(id: "kidney", label: "肾", cx: kidneyPos.cx, cy: kidneyPos.cy, rx: 11, ry: 14,
+              color: "#4a2a3a", highlightColor: "#aa5577", time: nil,
+              detailTitle: nil, detailDesc: nil, detailTags: nil),
+    ]
+
     static let massColor     = Color(hex: "EF9F27")!
     static let flowColor     = AppTheme.carbColor
     static let bubbleBg      = Color(hex: "1a1a35")!
     static let bubbleStroke  = Color(hex: "3a3a66")!
     static let residueStruct = AppTheme.primaryLight
     static let residueOver   = Color(hex: "D85A30")!
-
-    /// 绘制胰腺、肾（新增脏器）
-    static func drawExtraOrgans(context: GraphicsContext) {
-        let p = Path(ellipseIn: CGRect(x: pancreas.cx - pancreas.rx, y: pancreas.cy - pancreas.ry,
-                                       width: pancreas.rx * 2, height: pancreas.ry * 2))
-        context.fill(p, with: .color(pancreasColor))
-        context.draw(Text("胰腺").font(.system(size: 8)).foregroundColor(Color(hex: "8888aa")!),
-                     at: CGPoint(x: pancreas.cx, y: pancreas.cy))
-        let k = Path(ellipseIn: CGRect(x: kidney.cx - kidney.rx, y: kidney.cy - kidney.ry,
-                                       width: kidney.rx * 2, height: kidney.ry * 2))
-        context.fill(k, with: .color(kidneyColor))
-        context.draw(Text("肾").font(.system(size: 8)).foregroundColor(Color(hex: "8888aa")!),
-                     at: CGPoint(x: kidney.cx, y: kidney.cy))
-    }
 
     /// 食物团块（descending 阶段下滑）
     static func drawMass(at point: CGPoint, context: GraphicsContext) {
@@ -36,10 +30,10 @@ struct LiveSessionRenderer {
         context.stroke(r, with: .color(massColor), lineWidth: 0.8)
     }
 
-    /// 流动粒子（digesting 阶段沿主路径下行）
-    static func drawFlowParticle(at point: CGPoint, context: GraphicsContext) {
+    /// 流动粒子（digesting 阶段沿主路径下行）；alpha 末端衰减模拟吸收消失
+    static func drawFlowParticle(at point: CGPoint, alpha: Double = 1.0, context: GraphicsContext) {
         let r = Path(ellipseIn: CGRect(x: point.x - 2.5, y: point.y - 2.5, width: 5, height: 5))
-        context.fill(r, with: .color(flowColor.opacity(0.85)))
+        context.fill(r, with: .color(flowColor.opacity(0.85 * alpha)))
     }
 
     /// 残留粒子 + 名称尾标 ●—[食物名]

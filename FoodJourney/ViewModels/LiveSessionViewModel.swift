@@ -68,11 +68,13 @@ final class LiveSessionViewModel {
             progress += dt / 1.2
             if progress >= 1 { phase = .digesting; progress = 0 }
         case .digesting:
-            progress += dt / 3.0
+            progress += dt / 3.5
             if progress >= 1 { progress = 1; phase = .idle; stopTimer() }
         }
+        // 泡泡随粒子到达脏器路径位置而弹（lead = 粒子前端 t 值）
         if phase == .digesting {
-            for i in bubbles.indices where !bubbles[i].hasPopped && progress >= bubbles[i].popThreshold {
+            let lead = 0.30 + progress * 0.65
+            for i in bubbles.indices where !bubbles[i].hasPopped && lead >= bubbles[i].popThreshold {
                 bubbles[i].hasPopped = true
             }
         }
@@ -103,13 +105,13 @@ final class LiveSessionViewModel {
         var bs: [OrganBubble] = []
         let carb = food.carbPer100g, fat = food.fatPer100g, protein = food.proteinPer100g
 
-        bs.append(OrganBubble(organ: .stomach, organLabel: "胃", text: "胃蛋白酶分解蛋白", side: .left, popThreshold: 0.1))
-        bs.append(OrganBubble(organ: .smallIntestine, organLabel: "小肠", text: "吸收糖/氨基酸/脂肪酸", side: .left, popThreshold: 0.3))
+        bs.append(OrganBubble(organ: .stomach, organLabel: "胃", text: "胃蛋白酶分解蛋白", side: .left, popThreshold: 0.30))
+        bs.append(OrganBubble(organ: .smallIntestine, organLabel: "小肠", text: "吸收糖/氨基酸/脂肪酸", side: .left, popThreshold: 0.50))
         if carb > 1 {
-            bs.append(OrganBubble(organ: .pancreas, organLabel: "胰腺", text: "分泌胰岛素·碳水\(Int(carb))g", side: .right, popThreshold: 0.35))
+            bs.append(OrganBubble(organ: .pancreas, organLabel: "胰腺", text: "分泌胰岛素·碳水\(Int(carb))g", side: .right, popThreshold: 0.55))
         }
         if fat > 1 || protein > 1 {
-            bs.append(OrganBubble(organ: .liver, organLabel: "肝脏", text: "代谢脂肪/蛋白→ATP", side: .right, popThreshold: 0.5))
+            bs.append(OrganBubble(organ: .liver, organLabel: "肝脏", text: "代谢脂肪/蛋白→ATP", side: .right, popThreshold: 0.58))
         }
         // 肾：蛋白代谢必产尿酸——始终展示本份产生量；滞留>0时追加滞留量
         if protein > 1 {
@@ -117,13 +119,13 @@ final class LiveSessionViewModel {
             let retained = produced - result.uricAcidClearedMg
             var txt = "产生尿酸\(Int(produced))mg"
             if retained > 1 { txt += "·滞留\(Int(retained))mg" }
-            bs.append(OrganBubble(organ: .kidney, organLabel: "肾", text: txt, side: .right, popThreshold: 0.7))
+            bs.append(OrganBubble(organ: .kidney, organLabel: "肾", text: txt, side: .right, popThreshold: 0.70))
         }
         if food.fiberPer100g > 0 || food.lactosePer100g > 0 {
             var parts: [String] = []
             if food.fiberPer100g > 0 { parts.append("纤维\(Int(food.fiberPer100g))g") }
             if food.lactosePer100g > 0 { parts.append("乳糖\(Int(food.lactosePer100g))g") }
-            bs.append(OrganBubble(organ: .largeIntestine, organLabel: "大肠", text: parts.joined(separator: "/") + "残留", side: .left, popThreshold: 0.85))
+            bs.append(OrganBubble(organ: .largeIntestine, organLabel: "大肠", text: parts.joined(separator: "/") + "残留", side: .left, popThreshold: 0.88))
         }
         return bs
     }

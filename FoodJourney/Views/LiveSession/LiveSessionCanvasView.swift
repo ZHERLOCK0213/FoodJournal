@@ -22,11 +22,20 @@ struct LiveSessionCanvasView: View {
                 with: .color(DigestionCanvasRenderer.bgColor)
             )
             DigestionCanvasRenderer.drawBodyOutline(context: context)
+            // 剖面层次：躯干腔体微亮 + 脊柱暗示线，营造解剖图纵深感
+            let cavity = Path(roundedRect: CGRect(x: 64, y: 76, width: 112, height: 252), cornerRadius: 38)
+            context.fill(cavity, with: .color(Color(hex: "14142a")!.opacity(0.45)))
+            var spine = Path()
+            spine.move(to: CGPoint(x: 120, y: 76))
+            spine.addLine(to: CGPoint(x: 120, y: 324))
+            context.stroke(spine, with: .color(Color(hex: "2a2a48")!.opacity(0.5)),
+                           style: StrokeStyle(lineWidth: 1, dash: [1, 3]))
+
             DigestionCanvasRenderer.drawPath(context: context)
-            for organ in Organ.prototypeOrgans {
+            // 脏器：原型 6 个 + live 额外(胰腺/肾)，统一用 drawOrgan 绘制
+            for organ in Organ.prototypeOrgans + LiveSessionRenderer.liveExtraOrgans {
                 DigestionCanvasRenderer.drawOrgan(organ, isSelected: false, context: context)
             }
-            LiveSessionRenderer.drawExtraOrgans(context: context)
 
             // 残留粒子（累积，跨份保留）——同脏器多份纵向居中铺开，避免标签重叠
             var counts: [DigestiveOrgan: Int] = [:]
@@ -44,15 +53,20 @@ struct LiveSessionCanvasView: View {
             // 动画元素
             switch viewModel.phase {
             case .descending:
+                // 团块从口腔下滑到胃（路径 t: 0 → 0.3）
                 let t = viewModel.progress * 0.3
                 let pt = DigestionPath.catmullRom(points: DigestionPath.points, t: t)
                 LiveSessionRenderer.drawMass(at: pt, context: context)
             case .digesting:
-                for i in 0..<5 {
-                    let off = Double(i) * 0.1
-                    let t = min(max(viewModel.progress + off, 0), 1)
-                    let pt = DigestionPath.catmullRom(points: DigestionPath.points, t: t)
-                    LiveSessionRenderer.drawFlowParticle(at: pt, context: context)
+                // 团块到胃后分解成粒子，从胃(t=0.3)向末端流动；末端 alpha 衰减=吸收消失
+                let lead = 0.30 + viewModel.progress * 0.65
+                for i in 0..<6 {
+                    let t = lead - Double(i) * 0.06
+                    guard t > 0.30 else { continue }
+                    let tt = min(t, 0.96)
+                    let pt = DigestionPath.catmullRom(points: DigestionPath.points, t: tt)
+                    let alpha = t > 0.90 ? max(0, 1 - (t - 0.90) / 0.10) : 1.0
+                    LiveSessionRenderer.drawFlowParticle(at: pt, alpha: alpha, context: context)
                 }
             case .idle:
                 break
@@ -73,8 +87,8 @@ struct LiveSessionCanvasView: View {
         case .stomach:        return CGPoint(x: 103, y: 112)
         case .smallIntestine: return CGPoint(x: 112, y: 192)
         case .liver:          return CGPoint(x: 155, y: 100)
-        case .pancreas:       return CGPoint(x: LiveSessionRenderer.pancreas.cx, y: LiveSessionRenderer.pancreas.cy)
-        case .kidney:         return CGPoint(x: LiveSessionRenderer.kidney.cx, y: LiveSessionRenderer.kidney.cy)
+        case .pancreas:       return CGPoint(x: LiveSessionRenderer.pancreasPos.cx, y: LiveSessionRenderer.pancreasPos.cy)
+        case .kidney:         return CGPoint(x: LiveSessionRenderer.kidneyPos.cx, y: LiveSessionRenderer.kidneyPos.cy)
         case .largeIntestine: return CGPoint(x: 112, y: 262)
         }
     }
