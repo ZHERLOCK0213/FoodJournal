@@ -23,6 +23,18 @@ struct LiveSessionRenderer {
     static let residueStruct = AppTheme.primaryLight
     static let residueOver   = Color(hex: "D85A30")!
 
+    /// 脏器在消化道路径上的 t 值（与泡泡 popThreshold 一致）；用于按粒子到达揭示残留
+    static func organPathT(_ organ: DigestiveOrgan) -> Double {
+        switch organ {
+        case .stomach:        0.30
+        case .smallIntestine: 0.50
+        case .pancreas:       0.55
+        case .liver:          0.58
+        case .kidney:         0.70
+        case .largeIntestine: 0.88
+        }
+    }
+
     /// 食物团块（descending 阶段下滑）
     static func drawMass(at point: CGPoint, context: GraphicsContext) {
         let r = Path(ellipseIn: CGRect(x: point.x - 6, y: point.y - 4, width: 12, height: 8))

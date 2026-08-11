@@ -37,11 +37,26 @@ struct LiveSessionCanvasView: View {
                 DigestionCanvasRenderer.drawOrgan(organ, isSelected: false, context: context)
             }
 
-            // 残留粒子（累积，跨份保留）——同脏器多份纵向居中铺开，避免标签重叠
+            // 残留粒子（累积，跨份保留）——
+            // 已沉淀（本份之前）的始终显示；本份新增的按粒子是否到达该脏器路径位置揭示，
+            // 避免一吃西兰花膳食纤维就立刻出现在大肠。
+            let currentT: Double = {
+                switch viewModel.phase {
+                case .descending: return viewModel.progress * 0.3
+                case .digesting:  return 0.30 + viewModel.progress * 0.65
+                case .idle:       return 1.0
+                }
+            }()
+            let allResidues = viewModel.session.residues
+            let settled = viewModel.settledResidueCount
+            let visible = allResidues.enumerated().filter { idx, r in
+                idx < settled || currentT >= LiveSessionRenderer.organPathT(r.organ)
+            }.map { $0.element }
+            // 同脏器多份纵向居中铺开，避免标签重叠（仅在可见集合内计数）
             var counts: [DigestiveOrgan: Int] = [:]
-            for r in viewModel.session.residues { counts[r.organ, default: 0] += 1 }
+            for r in visible { counts[r.organ, default: 0] += 1 }
             var seq: [DigestiveOrgan: Int] = [:]
-            for r in viewModel.session.residues {
+            for r in visible {
                 let i = seq[r.organ, default: 0]; seq[r.organ] = i + 1
                 let total = counts[r.organ]!
                 let base = organPoint(for: r.organ)

@@ -30,6 +30,9 @@ final class LiveSessionViewModel {
 
     var bubbles: [OrganBubble] = []
 
+    /// 本份之前已沉淀的残留数（这些始终显示；本份新增的残留按动画进度揭示）
+    private(set) var settledResidueCount: Int = 0
+
     private var timer: Timer?
     private var lastTickDate = Date()
 
@@ -40,6 +43,7 @@ final class LiveSessionViewModel {
     func eatIn() {
         guard canEat, let food = selectedFood else { return }
         let item = FoodItem(food: food, grams: 100)
+        settledResidueCount = session.residues.count   // 记录本份之前的沉淀量
         let result = session.ingest(item)
         bubbles = makeBubbles(for: result, food: food)
         phase = .descending
@@ -95,6 +99,7 @@ final class LiveSessionViewModel {
         stopTimer()
         session.reset()
         bubbles = []
+        settledResidueCount = 0
         phase = .idle
         progress = 0
     }
@@ -104,6 +109,7 @@ final class LiveSessionViewModel {
         stopTimer()
         session.remove(at: index)
         bubbles = []
+        settledResidueCount = session.residues.count   // 重放后全部沉淀
         phase = .idle
         progress = 0
     }
