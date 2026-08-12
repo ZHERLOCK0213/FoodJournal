@@ -175,7 +175,7 @@ FoodJourney/
 4. ✅ 画布打磨两轮 + 残留时序修复
 
 ### 后续轮次（单开）
-- **代谢模型重构**：尿酸改肝产肾排、加尿素、加吸收物维度、加 `purinePer100g`、重标定常数。研究依据见 `docs/metabolism-research.md`
+- ✅ **代谢模型重构**（2026-08-12 完成，`72a2f3d`）：尿酸改肝产嘌呤、加尿素、加吸收物维度、加 `purinePer100g`、重标定常数。详见 `docs/metabolism-research.md`、`docs/CHANGELOG.md`
 - **食物数据库扩展**：数据来源 + 审核机制，补高嘌呤食物（内脏/沙丁鱼/贝类）
 - **旧三屏流程清理**：FoodInputView/DigestiveView/Summary 已不可达，待删
 - **风格统一重构**：@Published/@Observable 混用，留到最后单独一轮
@@ -286,7 +286,8 @@ FoodJourney/
 ### 代谢产物
 - CO₂：碳水 1.07g/g，脂肪 2.8g/g，蛋白质 0.8g/g
 - 水：碳水 0.6g/g，脂肪 1.07g/g，蛋白质 0.4g/g
-- 尿酸：蛋白质 50mg/g
+- 尿素：蛋白 1g → 340mg（肝脱氨，`ureaPerProteinMg`），肾排泄
+- 尿酸：嘌呤 1mg → 1mg（肝代谢，`uricAcidPerPurineMg`，与蛋白无关），肾排 70% + 肠排 30%
 
 ### 等级判定
 - 血糖负荷：<20g 低，20-50g 中，>50g 高

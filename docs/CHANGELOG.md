@@ -2,6 +2,28 @@
 
 > 按时间倒序。每轮记录改动内容，设计决策理由见 `design-decisions.md`。
 
+## 2026-08-12 · 代谢模型重构 (`72a2f3d`)
+
+**问题**：4 处代谢模型事实错误（详见 `metabolism-research.md`），最严重是尿酸按蛋白算且挂在肾「产生」——得出鸡胸肉产尿酸高于三文鱼，与生理事实相反。
+
+**改动**：
+- `Food`/`FoodItem`：加 `purinePer100g` / `purineMg`（嘌呤 mg，肝代谢产尿酸，与蛋白无关）
+- `FoodDatabase`：12 种食物补嘌呤值（三文鱼 250 / 红烧肉 150 / 鸡胸肉 137 / 豆腐 60 …）
+- `DigestionSession`：
+  - 尿酸改肝产（`purine * uricAcidPerPurineMg`，不挂 liver.eff），肾排 70% + 肠排 30%
+  - 新增尿素（蛋白→肝脱氨，`ureaPerProteinMg=340`），肾排泄，过载滞留
+  - 新增吸收物：葡萄糖入血/血糖负荷/胰岛素响应/氨基酸/脂肪酸
+  - `Constants` 加 `liverPurineLoad`/`kidneyPurineLoad`/`ureaPerProteinMg`/`uricAcidPerPurineMg`/`uricAcidRenalFraction`，删 `uricAcidPerProteinMg`
+  - 肾过载分别产「尿酸滞留」「尿素滞留」残留
+- `LiveSessionViewModel.makeBubbles`：小肠显示吸收物、胰腺显示血糖+胰岛素、肝显示产尿素·产尿酸、肾显示排泄+滞留
+- `ReportView`：新增「吸收物」卡，summary 加尿酸/尿素产生·滞留行，高尿酸镜头改提嘌呤
+
+**效果**：三文鱼产尿酸 250mg > 鸡胸肉 137mg，方向正确；尿素/吸收物维度可视化。常数标待运行时校准。
+
+## 2026-08-12 · 文档补全 (`0009d86`)
+
+新增 `docs/CHANGELOG.md` / `design-decisions.md` / `metabolism-research.md`，更新 `CLAUDE.md` 状态。新增 `docs/PRD.md`（v0.1，含 3 张 Mermaid 流程图）。
+
 ## 2026-08-11 · 残留时序修复 (`a92dba3`)
 
 **问题**：吃西兰花时，膳食纤维残留（大肠）在粒子还在胃部就已画出，不符合逻辑。
