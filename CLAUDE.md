@@ -19,9 +19,19 @@
 - 移除认证 / 档案 / 健康数据相关代码（`LoginView`、`ProfileView`、`UserProfile`、`SupabaseService`、`HealthKitService` 等）
 - 保留并聚焦三屏核心教育链路：食物输入 → 消化路径可视化 → 代谢总结
 
-## 产品愿景（目标态 · 待实现）
+## 当前状态（2026-08-12）
 
-> 2026-08 确定的北极星方向，尚未实现。当前已实现的三屏流程（见下文"App 结构"）将被重构为该模型。
+**live 累积会话已实现**（`live-session` 分支，5 次提交）。下方「产品愿景」章节描述的北极星已落地为代码：常驻消化道画布、逐份吃入、串行代谢、各脏器产物泡泡、底部三 Tab（消化预演/代谢报告/我）、问卷、重置饮食。
+
+**旧三屏流程已废弃**：下方「App 结构（已实现…）」描述的 FoodInputView→DigestiveView→Summary 线性流程在 live 会话落地后已不可达，待清理。
+
+> 改动记录见 `docs/CHANGELOG.md`，设计决策理由见 `docs/design-decisions.md`，代谢模型研究见 `docs/metabolism-research.md`。
+
+---
+
+## 产品愿景（目标态 · 已实现）
+
+> 2026-08 确定的北极星方向，**已实现**（见上方「当前状态」）。下方保留原始设计描述作为参考。
 
 ### 核心交互：live 累积会话
 - 用户在"犹豫要不要吃"时打开 App，进入一个**常驻的消化道画布视图**
@@ -89,7 +99,9 @@
 - `MetabolismEngine` 需新增**时间维度**（最难的部分，一次性建模成本，与食物数量无关）
 - 单顿最多 5–10 份食物，性能无压力
 
-## App 结构（已实现，将重构为 live 会话）
+## App 结构（⚠️ 已废弃 · live 会话已取代）
+
+> 以下三屏线性流程在 live 会话落地后已不可达（FoodInputView/DigestiveView/Summary 仍在代码中但无入口），待清理。保留描述供历史参考。
 
 ### 三屏核心流程
 ```
@@ -154,15 +166,19 @@ FoodJourney/
 - 影响范围：屏3 能量代谢卡片的 ATP 数值（蛋白质占比高的餐食影响最明显）
 - 约束：仅改此系数，未重构 MetabolismEngine 其他部分
 
-## 待办事项（本轮范围：第 1–3 项）
+## 待办事项
 
-1. **修复蛋白质代谢计算 bug**（见上）✅ 已完成
-2. **删除转型后的冗余代码**：`LoginView`、`ProfileView`、`UserProfile`、`SupabaseService`、`HealthKitService` 等 ✅ 已完成
-   - 全局搜索确认零外部引用；且这些文件未注册进 `project.pbxproj`（本就是死代码），删除不碰工程文件
-3. **接入 `FoodInfoCardView`**（FoodInput 屏的待接组件）
+### 已完成
+1. ✅ 修复蛋白质代谢计算 bug（ATP 0.05→0.085）
+2. ✅ 删除转型后冗余代码（LoginView/ProfileView/UserProfile/SupabaseService/HealthKitService）
+3. ✅ live 累积会话落地（取代原计划「接入 FoodInfoCardView」——愿景变更后直接重构为 live 会话）
+4. ✅ 画布打磨两轮 + 残留时序修复
 
-### 不在本轮范围（单开一轮）
-- **食物数据库扩展**：需专门决策数据来源与审核机制，不与本轮收尾工作混批。
+### 后续轮次（单开）
+- **代谢模型重构**：尿酸改肝产肾排、加尿素、加吸收物维度、加 `purinePer100g`、重标定常数。研究依据见 `docs/metabolism-research.md`
+- **食物数据库扩展**：数据来源 + 审核机制，补高嘌呤食物（内脏/沙丁鱼/贝类）
+- **旧三屏流程清理**：FoodInputView/DigestiveView/Summary 已不可达，待删
+- **风格统一重构**：@Published/@Observable 混用，留到最后单独一轮
 
 ## 本轮工作约束（重要 —— 勿自作主张）
 
