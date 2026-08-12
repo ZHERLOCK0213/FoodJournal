@@ -118,24 +118,46 @@ final class LiveSessionViewModel {
 
     private func makeBubbles(for result: FoodDigestionResult, food: Food) -> [OrganBubble] {
         var bs: [OrganBubble] = []
-        let carb = food.carbPer100g, fat = food.fatPer100g, protein = food.proteinPer100g
+        let purine = food.purinePer100g
+        let protein = food.proteinPer100g
 
         bs.append(OrganBubble(organ: .stomach, organLabel: "胃", text: "胃蛋白酶分解蛋白", side: .left, popThreshold: 0.30))
-        bs.append(OrganBubble(organ: .smallIntestine, organLabel: "小肠", text: "吸收糖/氨基酸/脂肪酸", side: .left, popThreshold: 0.50))
-        if carb > 1 {
-            bs.append(OrganBubble(organ: .pancreas, organLabel: "胰腺", text: "分泌胰岛素·碳水\(Int(carb))g", side: .right, popThreshold: 0.55))
+
+        // 小肠：展示实际吸收物（葡萄糖/氨基酸/脂肪酸，受吸收效率折减）
+        bs.append(OrganBubble(organ: .smallIntestine, organLabel: "小肠",
+            text: "吸收葡萄糖\(String(format: "%.1f", result.absorbedGlucoseG))g·氨基酸\(String(format: "%.1f", result.absorbedAminoAcidG))g·脂肪酸\(String(format: "%.1f", result.absorbedFattyAcidG))g",
+            side: .left, popThreshold: 0.50))
+
+        // 胰腺：碳水入血 → 胰岛素响应
+        if result.bloodGlucoseMg > 100 {
+            bs.append(OrganBubble(organ: .pancreas, organLabel: "胰腺",
+                text: "分泌胰岛素·血糖+\(Int(result.bloodGlucoseMg))mg", side: .right, popThreshold: 0.55))
         }
-        if fat > 1 || protein > 1 {
-            bs.append(OrganBubble(organ: .liver, organLabel: "肝脏", text: "代谢脂肪/蛋白→ATP", side: .right, popThreshold: 0.58))
+
+        // 肝：脱氨产尿素（蛋白）+ 代谢嘌呤产尿酸（与蛋白无关）
+        if protein > 1 || purine > 20 {
+            var parts: [String] = []
+            if result.ureaProducedMg > 1 { parts.append("产尿素\(Int(result.ureaProducedMg))mg") }
+            if purine > 20 { parts.append("产尿酸\(Int(result.uricAcidProducedMg))mg") }
+            if !parts.isEmpty {
+                bs.append(OrganBubble(organ: .liver, organLabel: "肝脏",
+                    text: parts.joined(separator: "·"), side: .right, popThreshold: 0.58))
+            }
         }
-        // 肾：蛋白代谢必产尿酸——始终展示本份产生量；滞留>0时追加滞留量
-        if protein > 1 {
-            let produced = result.uricAcidProducedMg
-            let retained = produced - result.uricAcidClearedMg
-            var txt = "产生尿酸\(Int(produced))mg"
-            if retained > 1 { txt += "·滞留\(Int(retained))mg" }
-            bs.append(OrganBubble(organ: .kidney, organLabel: "肾", text: txt, side: .right, popThreshold: 0.70))
+
+        // 肾：排泄尿酸(嘌呤) + 尿素(蛋白)；滞留>0 追加
+        if protein > 1 || purine > 20 {
+            var parts: [String] = []
+            if purine > 20 { parts.append("排泄尿酸\(Int(result.uricAcidExcretedMg))mg") }
+            if result.ureaExcretedMg > 1 { parts.append("排泄尿素\(Int(result.ureaExcretedMg))mg") }
+            if result.uricAcidRetainedMg > 1 { parts.append("尿酸滞留\(Int(result.uricAcidRetainedMg))mg") }
+            if result.ureaRetainedMg > 1 { parts.append("尿素滞留\(Int(result.ureaRetainedMg))mg") }
+            if !parts.isEmpty {
+                bs.append(OrganBubble(organ: .kidney, organLabel: "肾",
+                    text: parts.joined(separator: "·"), side: .right, popThreshold: 0.70))
+            }
         }
+
         if food.fiberPer100g > 0 || food.lactosePer100g > 0 {
             var parts: [String] = []
             if food.fiberPer100g > 0 { parts.append("纤维\(Int(food.fiberPer100g))g") }

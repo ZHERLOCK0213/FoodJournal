@@ -32,6 +32,11 @@ struct FoodItem: Identifiable {
         food.lactosePer100g * grams / 100.0
     }
 
+    /// 嘌呤毫克数（肝代谢 → 产尿酸；与蛋白无关）
+    var purineMg: Double {
+        food.purinePer100g * grams / 100.0
+    }
+
     /// 热量（kcal）
     var calories: Double {
         food.caloriesPer100g * grams / 100.0

@@ -29,7 +29,7 @@ enum DigestiveOrgan: String, CaseIterable, Identifiable {
         case .smallIntestine: return "未吸收营养"
         case .liver:          return "脂肪"
         case .pancreas:       return "多余糖分"
-        case .kidney:         return "尿酸"
+        case .kidney:         return "尿酸/尿素"
         case .largeIntestine: return "残渣"
         }
     }
@@ -68,8 +68,22 @@ struct FoodDigestionResult: Identifiable {
     let atpMoles: Double          // 实际产 ATP（已按效率折减）
     let co2Grams: Double
     let waterGrams: Double
-    let uricAcidProducedMg: Double  // 产生尿酸
-    let uricAcidClearedMg: Double   // 肾清除尿酸（未清除 → 肾残留）
+
+    // 吸收物（身体得到什么；小肠吸收后入血/淋巴）
+    let absorbedGlucoseG: Double    // 葡萄糖入血（来自碳水）
+    let absorbedAminoAcidG: Double  // 氨基酸入肝（来自蛋白）
+    let absorbedFattyAcidG: Double  // 脂肪酸入淋巴/血（来自脂肪）
+    let bloodGlucoseMg: Double      // 葡萄糖入血总量（mg，用于血糖负荷展示）
+    let insulinResponse: Double     // 胰岛素响应（相对值，胰腺效率折减）
+
+    // 氮废物（肝产、肾排）
+    let ureaProducedMg: Double      // 肝脱氨产尿素
+    let ureaExcretedMg: Double      // 肾排泄尿素
+    let ureaRetainedMg: Double      // 尿素滞留（肾过载时）
+    let uricAcidProducedMg: Double  // 肝代谢嘌呤产尿酸（与蛋白无关）
+    let uricAcidExcretedMg: Double  // 肾(70%)+肠(30%)排泄尿酸
+    let uricAcidRetainedMg: Double  // 尿酸滞留（肾过载时）
+
     let residues: [DigestionResidue]
     let overloads: [OverloadEvent]
 }
@@ -102,10 +116,21 @@ final class DigestionSession {
     var totalATP: Double { results.reduce(0) { $0 + $1.atpMoles } }
     var totalCO2: Double { results.reduce(0) { $0 + $1.co2Grams } }
     var totalWater: Double { results.reduce(0) { $0 + $1.waterGrams } }
-    /// 尿酸滞留 = 产生 − 清除（肾过载时累积，高尿酸镜头重点）
-    var totalUricAcidRetainedMg: Double {
-        results.reduce(0) { $0 + ($1.uricAcidProducedMg - $1.uricAcidClearedMg) }
-    }
+
+    // 吸收物累积（身体得到的）
+    var totalAbsorbedGlucoseG: Double { results.reduce(0) { $0 + $1.absorbedGlucoseG } }
+    var totalAbsorbedAminoAcidG: Double { results.reduce(0) { $0 + $1.absorbedAminoAcidG } }
+    var totalAbsorbedFattyAcidG: Double { results.reduce(0) { $0 + $1.absorbedFattyAcidG } }
+    var totalBloodGlucoseMg: Double { results.reduce(0) { $0 + $1.bloodGlucoseMg } }
+    var totalInsulinResponse: Double { results.reduce(0) { $0 + $1.insulinResponse } }
+
+    // 尿素累积（肝产、肾排）
+    var totalUreaProducedMg: Double { results.reduce(0) { $0 + $1.ureaProducedMg } }
+    var totalUreaRetainedMg: Double { results.reduce(0) { $0 + $1.ureaRetainedMg } }
+
+    // 尿酸累积（肝产嘌呤、肾排）
+    var totalUricAcidProducedMg: Double { results.reduce(0) { $0 + $1.uricAcidProducedMg } }
+    var totalUricAcidRetainedMg: Double { results.reduce(0) { $0 + $1.uricAcidRetainedMg } }
 
     /// 消耗与产率常数（可调，跑起来再校准）
     enum Constants {
@@ -113,14 +138,19 @@ final class DigestionSession {
         static let stomachLoadPerGram       = 0.3   // 总克数 → 胃
         static let smallIntestineLoadPerGram = 0.5  // 吸收性宏量 → 小肠
         static let liverFatLoad             = 1.0   // 脂肪 × liverLoadFactor → 肝
-        static let liverProteinLoad         = 0.6   // 蛋白（脱氨）→ 肝
+        static let liverProteinLoad         = 0.6   // 蛋白（脱氨产尿素）→ 肝
+        static let liverPurineLoad          = 0.0006// 嘌呤 mg（代谢产尿酸）→ 肝
         static let pancreasCarbLoad         = 0.8   // 碳水 → 胰
-        static let kidneyProteinLoad        = 0.5   // 蛋白（尿酸排泄）→ 肾
+        static let kidneyProteinLoad        = 0.5   // 蛋白（尿素排泄）→ 肾
+        static let kidneyPurineLoad         = 0.002 // 嘌呤 mg（尿酸排泄）→ 肾
         // 产率
         static let atpCarb = 0.105, atpFat = 0.237, atpProtein = 0.085
         static let co2Carb = 1.07,  co2Fat = 2.8,   co2Protein = 0.8
         static let waterCarb = 0.6, waterFat = 1.07, waterProtein = 0.4
-        static let uricAcidPerProteinMg = 50.0
+        // 氮废物产率
+        static let ureaPerProteinMg     = 340.0  // 蛋白 g → 尿素 mg（肝脱氨，1g蛋白≈340mg尿素）
+        static let uricAcidPerPurineMg  = 1.0    // 嘌呤 mg → 尿酸 mg（肝代谢产尿酸，与蛋白无关）
+        static let uricAcidRenalFraction = 0.70  // 尿酸经肾排泄比例（余 30% 肠道）
     }
 
     init() { resetCapacities() }
@@ -169,11 +199,16 @@ final class DigestionSession {
         let liverLoad = item.food.liverLoadFactor
 
         // 1. 各脏器能力需求
+        let purine = item.purineMg
         let stomachNeed = Constants.stomachLoadPerGram * mass
         let smallIntestineNeed = Constants.smallIntestineLoadPerGram * absorbable
-        let liverNeed = Constants.liverFatLoad * fat * liverLoad + Constants.liverProteinLoad * protein
+        let liverNeed = Constants.liverFatLoad * fat * liverLoad
+                        + Constants.liverProteinLoad * protein
+                        + Constants.liverPurineLoad * purine
         let pancreasNeed = Constants.pancreasCarbLoad * carb
+        // 肾排泄两类氮废物：尿素(蛋白) + 尿酸(嘌呤)
         let kidneyNeed = Constants.kidneyProteinLoad * protein
+                       + Constants.kidneyPurineLoad * purine
 
         // 2. 消耗能力，返回 (效率, 未满足量)
         func consume(_ organ: DigestiveOrgan, _ need: Double) -> (eff: Double, unmet: Double) {
@@ -196,7 +231,15 @@ final class DigestionSession {
         let aFat = fat * absorptionEff
         let aProtein = protein * absorptionEff
 
-        // 4. 产物（按相关脏器效率折减：碳水→胰、脂肪/蛋白→肝）
+        // 4. 吸收物（身体得到什么）
+        let absorbedGlucose = aCarb          // 葡萄糖入血
+        let absorbedAminoAcid = aProtein     // 氨基酸入肝
+        let absorbedFattyAcid = aFat         // 脂肪酸入淋巴/血
+        let bloodGlucoseMg = aCarb * 1000    // 葡萄糖入血总量(mg)
+        // 胰岛素响应：随碳水上升，胰腺过载则分泌不足
+        let insulinResponse = aCarb * pancreas.eff
+
+        // 5. 代谢产物（按相关脏器效率折减：碳水→胰、脂肪/蛋白→肝）
         let atp = aCarb * Constants.atpCarb * pancreas.eff
                 + aFat * Constants.atpFat * liver.eff
                 + aProtein * Constants.atpProtein * liver.eff
@@ -206,10 +249,19 @@ final class DigestionSession {
         let water = aCarb * Constants.waterCarb * pancreas.eff
                   + aFat * Constants.waterFat * liver.eff
                   + aProtein * Constants.waterProtein * liver.eff
-        let uricAcidProduced = aProtein * Constants.uricAcidPerProteinMg
-        let uricAcidCleared = uricAcidProduced * kidney.eff
 
-        // 5. 残留
+        // 6. 尿素（肝脱氨产，肾排泄；肝效率影响脱氨，肾效率影响排泄）
+        let ureaProduced = aProtein * Constants.ureaPerProteinMg * liver.eff
+        let ureaExcreted = ureaProduced * kidney.eff
+        let ureaRetained = ureaProduced - ureaExcreted
+
+        // 7. 尿酸（肝代谢嘌呤产，与蛋白无关；肾排70%+肠排30%）
+        let uricAcidProduced = purine * Constants.uricAcidPerPurineMg
+        let renalShare = uricAcidProduced * Constants.uricAcidRenalFraction
+        let uricAcidExcreted = (uricAcidProduced - renalShare) + renalShare * kidney.eff
+        let uricAcidRetained = renalShare * (1 - kidney.eff)
+
+        // 8. 残留
         var residues: [DigestionResidue] = []
         var overloads: [OverloadEvent] = []
 
@@ -231,16 +283,23 @@ final class DigestionSession {
             }
         }
         // 脏器过载残留
-        func addOverload(_ organ: DigestiveOrgan, _ unmet: Double) {
+        func addOverload(_ organ: DigestiveOrgan, _ unmet: Double, substance: String? = nil) {
             guard unmet > 0.01 else { return }
+            let sub = substance ?? organ.overloadSubstance
             residues.append(DigestionResidue(foodName: item.food.name, organ: organ,
-                                             substance: organ.overloadSubstance, amount: unmet, kind: .overload))
+                                             substance: sub, amount: unmet, kind: .overload))
             overloads.append(OverloadEvent(foodName: item.food.name, organ: organ,
-                                           substance: organ.overloadSubstance, unmetAmount: unmet))
+                                           substance: sub, unmetAmount: unmet))
         }
         addOverload(.liver, liver.unmet)
         addOverload(.pancreas, pancreas.unmet)
-        addOverload(.kidney, kidney.unmet)
+        // 肾过载：尿酸与尿素分别滞留
+        if uricAcidRetained > 0.5 {
+            addOverload(.kidney, uricAcidRetained, substance: "尿酸滞留")
+        }
+        if ureaRetained > 0.5 {
+            addOverload(.kidney, ureaRetained, substance: "尿素滞留")
+        }
 
         let result = FoodDigestionResult(
             foodName: item.food.name,
@@ -249,8 +308,17 @@ final class DigestionSession {
             atpMoles: atp,
             co2Grams: co2,
             waterGrams: water,
+            absorbedGlucoseG: absorbedGlucose,
+            absorbedAminoAcidG: absorbedAminoAcid,
+            absorbedFattyAcidG: absorbedFattyAcid,
+            bloodGlucoseMg: bloodGlucoseMg,
+            insulinResponse: insulinResponse,
+            ureaProducedMg: ureaProduced,
+            ureaExcretedMg: ureaExcreted,
+            ureaRetainedMg: ureaRetained,
             uricAcidProducedMg: uricAcidProduced,
-            uricAcidClearedMg: uricAcidCleared,
+            uricAcidExcretedMg: uricAcidExcreted,
+            uricAcidRetainedMg: uricAcidRetained,
             residues: residues,
             overloads: overloads
         )
@@ -263,6 +331,7 @@ final class DigestionSession {
     var cumulativeReportText: String {
         guard !results.isEmpty else { return "尚未吃入食物" }
         return "已吃入 \(results.count) 份，累计 \(Int(totalCalories)) kcal、"
-             + "\(String(format: "%.2f", totalATP)) mol ATP、尿酸滞留 \(Int(totalUricAcidRetainedMg)) mg。"
+             + "\(String(format: "%.2f", totalATP)) mol ATP、产尿酸 \(Int(totalUricAcidProducedMg)) mg"
+             + (totalUricAcidRetainedMg > 0.5 ? "（滞留 \(Int(totalUricAcidRetainedMg)) mg）" : "）") + "。"
     }
 }

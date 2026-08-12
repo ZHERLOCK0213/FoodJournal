@@ -50,6 +50,7 @@ struct Food: Identifiable {
     let fiberPer100g: Double      // 膳食纤维 → 大肠残留
     let lactosePer100g: Double    // 乳糖 → 乳糖酶不足时大肠残留
     let liverLoadFactor: Double   // 肝负荷倍数（氢化油/反式脂肪等 >1，体现慢代谢）
+    let purinePer100g: Double     // 嘌呤 mg/100g → 肝代谢产尿酸（与蛋白无关）
 
     // 数据来源（报告注脚，有权威来源时填）
     let sourceName: String?
@@ -66,6 +67,7 @@ struct Food: Identifiable {
         fiberPer100g: Double = 0,
         lactosePer100g: Double = 0,
         liverLoadFactor: Double = 1.0,
+        purinePer100g: Double = 0,
         sourceName: String? = nil,
         sourceURL: URL? = nil
     ) {
@@ -79,6 +81,7 @@ struct Food: Identifiable {
         self.fiberPer100g = fiberPer100g
         self.lactosePer100g = lactosePer100g
         self.liverLoadFactor = liverLoadFactor
+        self.purinePer100g = purinePer100g
         self.sourceName = sourceName
         self.sourceURL = sourceURL
     }

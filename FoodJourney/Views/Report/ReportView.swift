@@ -10,6 +10,7 @@ struct ReportView: View {
         ScrollView {
             VStack(spacing: 16) {
                 summaryCard
+                absorbedCard
                 residuesCard
                 overloadCard
                 adviceCard
@@ -24,15 +25,39 @@ struct ReportView: View {
     // MARK: 累积代谢
 
     private var summaryCard: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let kidneyHighlight = prefs.highlightedOrgans.contains(.kidney)
+        return VStack(alignment: .leading, spacing: 10) {
             Text("累积代谢").font(.system(size: 15, weight: .bold)).foregroundColor(.white)
             row("食物份数", "\(session.foodCount)")
             row("摄入热量", "\(Int(session.totalCalories)) kcal")
             row("实际产 ATP", "\(String(format: "%.2f", session.totalATP)) mol")
             row("CO₂", "\(Int(session.totalCO2)) g")
             row("代谢水", "\(Int(session.totalWater)) g")
-            row("尿酸滞留", "\(Int(session.totalUricAcidRetainedMg)) mg",
-                highlight: prefs.highlightedOrgans.contains(.kidney))
+            Divider().background(Color(hex: "2a2a44")!).padding(.vertical, 1)
+            // 尿酸（肝产嘌呤、肾排）
+            Text("尿酸（嘌呤代谢）").font(.system(size: 12, weight: .semibold)).foregroundColor(AppTheme.primaryLight)
+            row("肝产尿酸", "\(Int(session.totalUricAcidProducedMg)) mg", highlight: kidneyHighlight)
+            row("尿酸滞留", "\(Int(session.totalUricAcidRetainedMg)) mg", highlight: kidneyHighlight)
+            // 尿素（肝脱氨、肾排）
+            Text("尿素（蛋白脱氨）").font(.system(size: 12, weight: .semibold)).foregroundColor(AppTheme.primaryLight)
+            row("肝产尿素", "\(Int(session.totalUreaProducedMg)) mg", highlight: kidneyHighlight)
+            row("尿素滞留", "\(Int(session.totalUreaRetainedMg)) mg", highlight: kidneyHighlight)
+        }
+        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(hex: "111128")!).clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    // MARK: 吸收物（身体得到了什么）
+
+    private var absorbedCard: some View {
+        let pancreasHighlight = prefs.highlightedOrgans.contains(.pancreas)
+        return VStack(alignment: .leading, spacing: 10) {
+            Text("吸收物（身体得到）").font(.system(size: 15, weight: .bold)).foregroundColor(.white)
+            row("葡萄糖入血", "\(String(format: "%.1f", session.totalAbsorbedGlucoseG)) g", highlight: pancreasHighlight)
+            row("血糖负荷", "\(Int(session.totalBloodGlucoseMg)) mg", highlight: pancreasHighlight)
+            row("胰岛素响应", "\(String(format: "%.1f", session.totalInsulinResponse))", highlight: pancreasHighlight)
+            row("氨基酸入肝", "\(String(format: "%.1f", session.totalAbsorbedAminoAcidG)) g")
+            row("脂肪酸入淋巴", "\(String(format: "%.1f", session.totalAbsorbedFattyAcidG)) g")
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(hex: "111128")!).clipShape(RoundedRectangle(cornerRadius: 14))
@@ -106,11 +131,17 @@ struct ReportView: View {
 
     private var advice: String {
         var s = "本次共吃入 \(session.foodCount) 份。"
-        if prefs.highlightedOrgans.contains(.kidney) && session.totalUricAcidRetainedMg > 0 {
-            s += "肾排泄尿酸能力受限，尿酸滞留 \(Int(session.totalUricAcidRetainedMg))mg，建议减少高蛋白连续摄入、多饮水。"
+        // 高尿酸镜头：尿酸来自嘌呤（非蛋白），三文鱼/鸡胸肉/红烧肉为高嘌呤
+        if prefs.highlightedOrgans.contains(.kidney) {
+            if session.totalUricAcidRetainedMg > 0 {
+                s += "你关注尿酸：本次尿酸滞留 \(Int(session.totalUricAcidRetainedMg))mg。尿酸由肝代谢嘌呤产生（与蛋白无关），三文鱼、鸡胸肉、红烧肉等嘌呤较高，建议避免连续大量摄入、多饮水促进肾排泄。"
+            } else if session.totalUricAcidProducedMg > 0 {
+                s += "你关注尿酸：本次产尿酸 \(Int(session.totalUricAcidProducedMg))mg，肾排泄正常无滞留。尿酸由肝代谢嘌呤产生，高嘌呤食物（三文鱼/鸡胸肉/红烧肉）连续摄入仍需留意。"
+            }
         }
+        // 高血糖/胰岛素镜头：碳水→血糖→胰腺胰岛素
         if prefs.highlightedOrgans.contains(.pancreas) {
-            s += "你关注血糖：连续高碳水会加重胰腺负担，注意分散碳水摄入。"
+            s += "你关注血糖：本次血糖负荷 \(Int(session.totalBloodGlucoseMg))mg，胰岛素响应 \(String(format: "%.1f", session.totalInsulinResponse))。连续高碳水加重胰腺负担，米饭/馒头/面条等精制碳水宜分散摄入。"
         }
         if prefs.highlightedOrgans.contains(.liver) {
             s += "高脂食物加重肝脏代谢负荷，留意脂肪堆积。"
