@@ -112,6 +112,13 @@ final class DigestionSession {
     // MARK: 累积总量
 
     var foodCount: Int { results.count }
+
+    /// 本次进食某脏器使用度（0~1）：已消耗能力 / 初始能力。大肠无能力值返回 0。
+    func usageRatio(_ organ: DigestiveOrgan) -> Double {
+        guard organ.initialCapacity > 0 else { return 0 }
+        let remaining = capacities[organ] ?? organ.initialCapacity
+        return max(0, (organ.initialCapacity - remaining) / organ.initialCapacity)
+    }
     var totalCalories: Double { results.reduce(0) { $0 + $1.calories } }
     var totalATP: Double { results.reduce(0) { $0 + $1.atpMoles } }
     var totalCO2: Double { results.reduce(0) { $0 + $1.co2Grams } }

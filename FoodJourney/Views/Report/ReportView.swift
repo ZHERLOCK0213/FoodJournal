@@ -92,7 +92,10 @@ struct ReportView: View {
 
     private var overloadCard: some View {
         let events = session.results.flatMap { $0.overloads }
-        return VStack(alignment: .leading, spacing: 8) {
+        let overloadByOrgan = Dictionary(grouping: events, by: \.organ)
+            .mapValues { Array(Set($0.map(\.substance))).sorted() }
+        let usageOrgans: [DigestiveOrgan] = [.stomach, .smallIntestine, .liver, .pancreas, .kidney]
+        return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 5) {
                 Text("脏器过载").font(.system(size: 14, weight: .semibold)).foregroundColor(.white)
                 Button {
@@ -110,23 +113,46 @@ struct ReportView: View {
                         .presentationCompactAdaptation(.popover)
                 }
             }
-            if events.isEmpty {
-                Text("各脏器能力充足").font(.system(size: 12)).foregroundColor(AppTheme.textSecondary(scheme: colorScheme))
-            } else {
-                ForEach(events) { e in
-                    let highlighted = prefs.highlightedOrgans.contains(e.organ)
-                    return HStack {
-                        Text(e.foodName).font(.system(size: 12)).foregroundColor(.white)
-                        Spacer()
-                        Text("\(e.organ.rawValue)过载·\(e.substance)")
-                            .font(.system(size: 11))
-                            .foregroundColor(highlighted ? Color(hex: "D85A30")! : AppTheme.textSecondary(scheme: colorScheme))
-                    }
-                }
+            // 各脏器本次进食使用度
+            ForEach(usageOrgans, id: \.self) { organ in
+                organUsageRow(organ, overloadByOrgan: overloadByOrgan)
             }
         }
         .padding(14).frame(maxWidth: .infinity, alignment: .leading)
         .background(Color(hex: "111128")!).clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+
+    /// 单脏器使用度行：名称 + 进度条 + 百分比，过载时红并附滞留物质
+    private func organUsageRow(_ organ: DigestiveOrgan,
+                               overloadByOrgan: [DigestiveOrgan: [String]]) -> some View {
+        let ratio = session.usageRatio(organ)
+        let substances = overloadByOrgan[organ]
+        let isOverloaded = substances != nil
+        let highlighted = prefs.highlightedOrgans.contains(organ)
+        let barColor: Color = isOverloaded ? Color(hex: "D85A30")!
+            : (highlighted ? AppTheme.primaryLight : AppTheme.primary)
+        return VStack(spacing: 4) {
+            HStack {
+                Text(organ.rawValue).font(.system(size: 12)).foregroundColor(.white)
+                Spacer()
+                Text("\(Int(ratio * 100))%")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundColor(isOverloaded ? Color(hex: "D85A30")!
+                        : (highlighted ? AppTheme.primaryLight : AppTheme.textSecondary(scheme: colorScheme)))
+            }
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color(hex: "2a2a44")!)
+                    Capsule().fill(barColor).frame(width: geo.size.width * ratio)
+                }
+            }
+            .frame(height: 5)
+            if isOverloaded, let subs = substances {
+                Text(subs.joined(separator: "·"))
+                    .font(.system(size: 10))
+                    .foregroundColor(Color(hex: "D85A30")!)
+            }
+        }
     }
 
     // MARK: 问卷分析
