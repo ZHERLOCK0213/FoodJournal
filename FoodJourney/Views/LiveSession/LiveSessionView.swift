@@ -88,13 +88,12 @@ struct LiveSessionView: View {
 
     private var bottomBar: some View {
         HStack(spacing: 10) {
-            // 吃进去
+            // 选食物
             Button {
                 viewModel.eatIn()
             } label: {
                 HStack(spacing: 4) {
                     Text(viewModel.selectedFood?.name ?? "选食物").font(.system(size: 13, weight: .semibold))
-                    Text("·吃进去").font(.system(size: 13, weight: .bold))
                     Image(systemName: "arrow.down.circle.fill").font(.system(size: 13))
                 }
                 .foregroundColor(.white)
@@ -107,12 +106,12 @@ struct LiveSessionView: View {
 
             Spacer()
 
-            // 我吃完了 → 切到代谢报告 Tab
+            // 查看报告 → 切到代谢报告 Tab
             Button {
                 selectedTab = 1
             } label: {
                 HStack(spacing: 4) {
-                    Text("我吃完了").font(.system(size: 13, weight: .bold))
+                    Text("查看报告").font(.system(size: 13, weight: .bold))
                     Image(systemName: "doc.text.magnifyingglass").font(.system(size: 12))
                 }
                 .foregroundColor(AppTheme.primaryLight)

@@ -5,6 +5,7 @@ struct ReportView: View {
     let session: DigestionSession
     let prefs: UserPreferences
     @Environment(\.colorScheme) private var colorScheme
+    @State private var showCapacityInfo = false
 
     var body: some View {
         ScrollView {
@@ -92,7 +93,23 @@ struct ReportView: View {
     private var overloadCard: some View {
         let events = session.results.flatMap { $0.overloads }
         return VStack(alignment: .leading, spacing: 8) {
-            Text("脏器过载").font(.system(size: 14, weight: .semibold)).foregroundColor(.white)
+            HStack(spacing: 5) {
+                Text("脏器过载").font(.system(size: 14, weight: .semibold)).foregroundColor(.white)
+                Button {
+                    showCapacityInfo = true
+                } label: {
+                    Image(systemName: "info.circle").font(.system(size: 12))
+                        .foregroundColor(AppTheme.textSecondary(scheme: colorScheme))
+                }
+                .buttonStyle(.plain)
+                .popover(isPresented: $showCapacityInfo) {
+                    Text("本报告的脏器代谢能力条件为饮水充足、睡眠充足的前提下。")
+                        .font(.system(size: 12))
+                        .padding(12)
+                        .frame(maxWidth: 240)
+                        .presentationCompactAdaptation(.popover)
+                }
+            }
             if events.isEmpty {
                 Text("各脏器能力充足").font(.system(size: 12)).foregroundColor(AppTheme.textSecondary(scheme: colorScheme))
             } else {
