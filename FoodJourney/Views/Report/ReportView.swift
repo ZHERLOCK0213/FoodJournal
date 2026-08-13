@@ -88,7 +88,7 @@ struct ReportView: View {
         .background(Color(hex: "111128")!).clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
-    // MARK: 过载
+    // MARK: 内脏使用度
 
     private var overloadCard: some View {
         let events = session.results.flatMap { $0.overloads }
@@ -97,7 +97,7 @@ struct ReportView: View {
         let usageOrgans: [DigestiveOrgan] = [.stomach, .smallIntestine, .liver, .pancreas, .kidney]
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 5) {
-                Text("脏器过载").font(.system(size: 14, weight: .semibold)).foregroundColor(.white)
+                Text("内脏使用度").font(.system(size: 14, weight: .semibold)).foregroundColor(.white)
                 Button {
                     showCapacityInfo = true
                 } label: {
@@ -106,7 +106,7 @@ struct ReportView: View {
                 }
                 .buttonStyle(.plain)
                 .popover(isPresented: $showCapacityInfo) {
-                    Text("本报告的脏器代谢能力条件为饮水充足、睡眠充足的前提下。")
+                    Text("本报告的内脏代谢能力条件为饮水充足、睡眠充足的前提下。")
                         .font(.system(size: 12))
                         .padding(12)
                         .frame(maxWidth: 240)
@@ -122,14 +122,15 @@ struct ReportView: View {
         .background(Color(hex: "111128")!).clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
-    /// 单脏器使用度行：名称 + 进度条 + 百分比，过载时红并附滞留物质
+    /// 单脏器使用度行：名称 + 进度条 + 百分比；满载(100%)时整行转红并附滞留物质
     private func organUsageRow(_ organ: DigestiveOrgan,
                                overloadByOrgan: [DigestiveOrgan: [String]]) -> some View {
         let ratio = session.usageRatio(organ)
+        let isMaxed = ratio >= 0.999            // 能力耗尽 = 100%
         let substances = overloadByOrgan[organ]
-        let isOverloaded = substances != nil
+        let overloadLabel = substances?.joined(separator: "·") ?? organ.overloadSubstance
         let highlighted = prefs.highlightedOrgans.contains(organ)
-        let barColor: Color = isOverloaded ? Color(hex: "D85A30")!
+        let barColor: Color = isMaxed ? Color(hex: "D85A30")!
             : (highlighted ? AppTheme.primaryLight : AppTheme.primary)
         return VStack(spacing: 4) {
             HStack {
@@ -137,7 +138,7 @@ struct ReportView: View {
                 Spacer()
                 Text("\(Int(ratio * 100))%")
                     .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundColor(isOverloaded ? Color(hex: "D85A30")!
+                    .foregroundColor(isMaxed ? Color(hex: "D85A30")!
                         : (highlighted ? AppTheme.primaryLight : AppTheme.textSecondary(scheme: colorScheme)))
             }
             GeometryReader { geo in
@@ -147,8 +148,8 @@ struct ReportView: View {
                 }
             }
             .frame(height: 5)
-            if isOverloaded, let subs = substances {
-                Text(subs.joined(separator: "·"))
+            if isMaxed {
+                Text(overloadLabel)
                     .font(.system(size: 10))
                     .foregroundColor(Color(hex: "D85A30")!)
             }
