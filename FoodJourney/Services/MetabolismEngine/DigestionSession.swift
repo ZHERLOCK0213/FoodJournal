@@ -150,14 +150,14 @@ final class DigestionSession {
         static let pancreasCarbLoad         = 0.8   // 碳水 → 胰
         static let kidneyProteinLoad        = 0.5   // 蛋白（尿素排泄）→ 肾
         static let kidneyPurineLoad         = 0.002 // 嘌呤 mg（尿酸排泄）→ 肾
-        // 产率
-        static let atpCarb = 0.105, atpFat = 0.237, atpProtein = 0.085
+        // 产率（ATP：Lehninger 第7版现代 P/O 比 2.5/1.5；1mol葡萄糖180g→30ATP、1mol棕榈酸256g→106ATP、蛋白碳骨架扣尿素循环成本）
+        static let atpCarb = 0.167, atpFat = 0.40, atpProtein = 0.14
         static let co2Carb = 1.07,  co2Fat = 2.8,   co2Protein = 0.8
         static let waterCarb = 0.6, waterFat = 1.07, waterProtein = 0.4
         // 氮废物产率
         static let ureaPerProteinMg     = 340.0  // 蛋白 g → 尿素 mg（肝脱氨，1g蛋白≈340mg尿素）
-        static let uricAcidPerPurineMg  = 1.0    // 嘌呤 mg → 尿酸 mg（肝代谢产尿酸，与蛋白无关）
-        static let uricAcidRenalFraction = 0.70  // 尿酸经肾排泄比例（余 30% 肠道）
+        static let uricAcidPerPurineMg  = 0.5    // 嘌呤碱基 mg → 尿酸 mg（日本痛风饮食文献净转化系数；化学上限1.17×净生物利用度~0.43≈0.5。前提：食物嘌呤须为"嘌呤碱基"口径）
+        static let uricAcidRenalFraction = 0.70  // 尿酸经肾排泄比例（约2/3肾+1/3肠，70/30 同义；StatPearls/Merck）
     }
 
     init() { resetCapacities() }
