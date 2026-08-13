@@ -48,7 +48,7 @@ enum FoodDatabase {
             nutrients: [.protein, .fat],
             description: "富含Omega-3脂肪酸，优质蛋白来源",
             carbPer100g: 0.0, fatPer100g: 13.0, proteinPer100g: 20.0, caloriesPer100g: 200,
-            purinePer100g: 250
+            purinePer100g: 175    // 嘌呤碱基 mg/100g（用户提供权威范围 150–200，取中值；原 250 偏高）
         ),
         Food(
             name: "豆腐",
