@@ -128,7 +128,17 @@ struct ReportView: View {
         let ratio = session.usageRatio(organ)
         let isMaxed = ratio >= 0.999            // 能力耗尽 = 100%
         let substances = overloadByOrgan[organ]
-        let overloadLabel = substances?.joined(separator: "·") ?? organ.overloadSubstance
+        // 胃/小肠过载不产生局部残留（靠降吸收体现），用功能性说明；肝/胰/肾用实际滞留物质
+        let overloadLabel: String
+        if let subs = substances {
+            overloadLabel = subs.joined(separator: "·")
+        } else {
+            switch organ {
+            case .stomach:        overloadLabel = "胃部负荷饱和"        // 胃只作饱腹指标，不门控吸收
+            case .smallIntestine: overloadLabel = "吸收能力饱和·吸收下降" // 小肠耗尽才会降吸收
+            default:              overloadLabel = organ.overloadSubstance
+            }
+        }
         let highlighted = prefs.highlightedOrgans.contains(organ)
         let barColor: Color = isMaxed ? Color(hex: "D85A30")!
             : (highlighted ? AppTheme.primaryLight : AppTheme.primary)

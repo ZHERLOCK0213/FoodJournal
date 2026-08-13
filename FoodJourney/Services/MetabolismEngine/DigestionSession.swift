@@ -226,14 +226,15 @@ final class DigestionSession {
             return (consumed / need, need - consumed)
         }
 
-        let stomach   = consume(.stomach, stomachNeed)
+        // 胃：只消耗能力作「饱腹负荷」指标，不门控吸收（胃负责研磨/排空，吸收在小肠）
+        _ = consume(.stomach, stomachNeed)
         let smallInt  = consume(.smallIntestine, smallIntestineNeed)
         let liver     = consume(.liver, liverNeed)
         let pancreas  = consume(.pancreas, pancreasNeed)
         let kidney    = consume(.kidney, kidneyNeed)
 
-        // 3. 吸收效率（胃 + 小肠）决定多少宏量进入系统
-        let absorptionEff = min(stomach.eff, smallInt.eff)
+        // 3. 吸收效率由小肠决定（胃不门控吸收）；小肠能力耗尽时吸收才下降
+        let absorptionEff = smallInt.eff
         let aCarb = carb * absorptionEff
         let aFat = fat * absorptionEff
         let aProtein = protein * absorptionEff
