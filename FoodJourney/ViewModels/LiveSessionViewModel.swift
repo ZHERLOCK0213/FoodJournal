@@ -23,6 +23,9 @@ final class LiveSessionViewModel {
 
     let foods: [Food] = FoodDatabase.allFoods
     var selectedFood: Food?
+    var selectedGrams: Double = 100
+    private(set) var journey: MealDigestionJourney?
+    private(set) var completedJourneyID: UUID?
 
     enum Phase: Equatable { case idle, descending, digesting }
     var phase: Phase = .idle
@@ -39,16 +42,37 @@ final class LiveSessionViewModel {
     var canEat: Bool { phase == .idle && selectedFood != nil }
     var canFinish: Bool { session.foodCount > 0 && phase == .idle }
 
-    /// 吃进去：摄入一份（100g），启动动画；同时清掉上一份的临时泡泡
+    /// Capture the food and portion at ingestion; later picker changes must not alter this journey.
     func eatIn() {
-        guard canEat, let food = selectedFood else { return }
-        let item = FoodItem(food: food, grams: 100)
+        guard canEat, let food = selectedFood, selectedGrams.isFinite, selectedGrams > 0 else { return }
+        let item = FoodItem(food: food, grams: selectedGrams)
         settledResidueCount = session.residues.count   // 记录本份之前的沉淀量
         let result = session.ingest(item)
         bubbles = makeBubbles(for: result, food: food)
+        journey = MealDigestionJourney(item: item)
+        completedJourneyID = nil
         phase = .descending
         progress = 0
         startTimer()
+    }
+
+    /// Replay is visual only, never a second ingestion.
+    func replay() {
+        guard phase == .idle, journey != nil else { return }
+        completedJourneyID = nil
+        phase = .descending
+        progress = 0
+        startTimer()
+    }
+
+    /// Focus belongs to the view, not this route: selecting an organ must never filter food particles.
+    var foodParticlePositions: [CGPoint] {
+        guard phase != .idle else { return [] }
+        let route = phase == .descending ? AnatomyArtwork.swallowRoute : AnatomyArtwork.digestionRoute
+        return (0..<(phase == .descending ? 1 : 5)).compactMap { index in
+            let t = progress - Double(index) * 0.035
+            return t >= 0 ? route.point(at: t) : nil
+        }
     }
 
     private func startTimer() {
@@ -66,15 +90,28 @@ final class LiveSessionViewModel {
         let now = Date()
         let dt = now.timeIntervalSince(lastTickDate)
         lastTickDate = now
+        advance(by: dt)
+    }
+
+    /// Deterministic state transition, also used by regression tests. Carry overshoot between phases.
+    func advance(by dt: TimeInterval) {
+        guard dt.isFinite, dt >= 0 else { return }
         switch phase {
         case .idle:
             break
         case .descending:
             progress += dt / 1.2
-            if progress >= 1 { phase = .digesting; progress = 0 }
+            if progress >= 1 {
+                let remaining = (progress - 1) * 1.2
+                phase = .digesting; progress = 0
+                advance(by: remaining)
+            }
         case .digesting:
-            progress += dt / 3.5
-            if progress >= 1 { progress = 1; phase = .idle }
+            progress += dt / 6.0
+            if progress >= 1 {
+                progress = 1; phase = .idle
+                completedJourneyID = journey?.id
+            }
         }
         // 泡泡随粒子到达脏器路径位置而弹（lead = 粒子前端 t 值）
         if phase == .digesting {
@@ -99,6 +136,8 @@ final class LiveSessionViewModel {
         stopTimer()
         session.reset()
         bubbles = []
+        journey = nil
+        completedJourneyID = nil
         settledResidueCount = 0
         phase = .idle
         progress = 0
@@ -109,6 +148,8 @@ final class LiveSessionViewModel {
         stopTimer()
         session.remove(at: index)
         bubbles = []
+        journey = nil
+        completedJourneyID = nil
         settledResidueCount = session.residues.count   // 重放后全部沉淀
         phase = .idle
         progress = 0

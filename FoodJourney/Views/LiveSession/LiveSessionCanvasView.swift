@@ -22,18 +22,20 @@ struct LiveSessionCanvasView: View {
                 with: .color(DigestionCanvasRenderer.bgColor)
             )
             DigestionCanvasRenderer.drawBodyOutline(context: context)
-            // 剖面层次：躯干腔体微亮 + 脊柱暗示线，营造解剖图纵深感
-            let cavity = Path(roundedRect: CGRect(x: 64, y: 76, width: 112, height: 252), cornerRadius: 38)
-            context.fill(cavity, with: .color(Color(hex: "14142a")!.opacity(0.45)))
-            var spine = Path()
-            spine.move(to: CGPoint(x: 120, y: 76))
-            spine.addLine(to: CGPoint(x: 120, y: 324))
-            context.stroke(spine, with: .color(Color(hex: "2a2a48")!.opacity(0.5)),
-                           style: StrokeStyle(lineWidth: 1, dash: [1, 3]))
+            DigestionCanvasRenderer.drawBodyCutaway(context: context)
+
+            // 后层辅助器官先绘制，避免胰腺像贴纸一样压在胃的最前面。
+            for organ in LiveSessionRenderer.liveExtraOrgans {
+                DigestionCanvasRenderer.drawOrgan(organ, isSelected: false, context: context)
+            }
+            if let liver = Organ.prototypeOrgans.first(where: { $0.id == "liver" }) {
+                DigestionCanvasRenderer.drawOrgan(liver, isSelected: false, context: context)
+            }
 
             DigestionCanvasRenderer.drawPath(context: context)
-            // 脏器：原型 6 个 + live 额外(胰腺/肾)，统一用 drawOrgan 绘制
-            for organ in Organ.prototypeOrgans + LiveSessionRenderer.liveExtraOrgans {
+
+            // 主消化道器官和标签位于前层；肝脏已在后层绘制。
+            for organ in Organ.prototypeOrgans where organ.id != "liver" {
                 DigestionCanvasRenderer.drawOrgan(organ, isSelected: false, context: context)
             }
 
@@ -99,12 +101,12 @@ struct LiveSessionCanvasView: View {
     /// 脏器中心点（240×370 坐标）
     private func organPoint(for organ: DigestiveOrgan) -> CGPoint {
         switch organ {
-        case .stomach:        return CGPoint(x: 103, y: 112)
-        case .smallIntestine: return CGPoint(x: 112, y: 192)
-        case .liver:          return CGPoint(x: 155, y: 100)
+        case .stomach:        return CGPoint(x: 145, y: 126)
+        case .smallIntestine: return CGPoint(x: 115, y: 215)
+        case .liver:          return CGPoint(x: 82, y: 122)
         case .pancreas:       return CGPoint(x: LiveSessionRenderer.pancreasPos.cx, y: LiveSessionRenderer.pancreasPos.cy)
         case .kidney:         return CGPoint(x: LiveSessionRenderer.kidneyPos.cx, y: LiveSessionRenderer.kidneyPos.cy)
-        case .largeIntestine: return CGPoint(x: 112, y: 262)
+        case .largeIntestine: return CGPoint(x: 84, y: 220)
         }
     }
 }

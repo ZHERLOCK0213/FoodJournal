@@ -44,5 +44,6 @@ struct FoodChipView: View {
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("food-chip-\(food.name)")
     }
 }

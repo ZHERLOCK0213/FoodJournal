@@ -17,6 +17,8 @@ struct ReportView: View {
                 adviceCard
             }
             .padding(16)
+            // iOS 26 的悬浮 Tab 栏会覆盖滚动内容；留出空间以确保最后一张卡片可完整查看。
+            .padding(.bottom, 88)
         }
         .background(Color(hex: "0d0d1a")!)
         .preferredColorScheme(.dark)

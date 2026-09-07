@@ -1,0 +1,65 @@
+# 人体与器官素材 v2 · 2026-09-07
+
+本轮回应：成人正面人体、简化口腔、聚焦不能截断食物流动、每份完成后的器官过程与结果。
+
+## 视觉基线
+
+2026-09-07 后续小修：仅将双肾及引线锚点整体下移 14 个注册单位（画布高 440），保持形状、左右高低差及后层关系。静态素材同步更新；原有 `previews/` 测试截图保留为小修前记录，最新位置另见 [肾脏下移截图](previews/kidneys-lowered-app.png)。5 项器官单元测试及 1 条聚焦 UI 测试全部通过（`/private/tmp/foodjourney-kidneys-lowered-1.xcresult`）。用户提出的去人体轮廓和左右器官数据气泡暂不实施，等待手绘稿与确认。
+
+- 参考 NIDDK 的成人正面躯干；头部仍朝右，不镜像器官位置。
+- 添加肩胸、锁骨、肘腕、分指手掌和骨盆轮廓；裁切于大腿，不是短腿儿童全身。
+- 口腔是一小块内部开口，不再用 U 形粗管勾出上下嘴唇。
+- 保留 v1 的 10 个独立器官图层、圆角肠道、后层双肾和原位拼接坐标。
+- 当前属于可编辑矢量 Demo，尚待用户视觉验收，并非医学插图成品。
+
+[素材总览](index.html) · [拼接 PNG](assembled.png) · [人体 SVG](body.svg)
+
+实际界面：[安装后的首页](previews/installed-app.png) · [聚焦胃时的下游食流](previews/stomach-focus-food-in-intestine.png) · [鸡胸肉 200g 器官小结](previews/chicken-200g-summary.png) · [结果定位到胰腺](previews/chicken-200g-pancreas.png)。
+
+## 交互与结果
+
+1. 选器官只改变器官视觉焦点，不过滤食物粒子。静止时其他器官不透明度 13%；预演中 32%，方便辨认下游。
+2. 份量选择 50 / 100 / 200 / 300g，默认 100g。开始时冻结本份食物、克重；后续选择不改变既有小结。
+3. 预演时间约 7.2 秒（非真实消化时间）。完成后自动出现「本份消化小结」，向上展开查看每个器官的过程和结果，点击「定位」回到该器官。
+4. 关闭后仍能在下方卡片重新查看小结；恢复全貌后可重播。重播不增加摄入记录。
+5. 新一份开始、删除、重置会清除过期小结；每份完成后展示自己的小结。
+
+## 科普边界与来源
+
+新 `MealDigestionJourney` 根据宏量营养成分编排典型过程，不使用旧「器官能力耗尽」模型计算个人产物量。不要把教育性预演称为实际个人消化结果。
+
+- 蛋白、脂肪、碳水都会触发胰腺消化酶协作，不以血糖阈值决定胰腺是否参与。
+- 无纤维食物仍展示大肠吸水等一般作用；不能说鸡胸肉全部进入大肠或全部变成粪便。
+- 肝、胆、胰为协作器官，肾为持续发生的代谢延伸；食团不经过它们。金色粒子仍只代表消化道内内容物，不代表未改变的原食物或全部营养。
+- 尿液等结果以定性科普描述，不声称一份食物可预测个人尿素、尿酸或血糖变化量。
+- 现有数据库成分还缺统一校核和生熟口径；界面明确「成分示例」，不能用于医疗或个性化膳食判断。旧报告页仍待单独改造。
+
+查阅于 2026-09-07：
+
+- [NIDDK：消化系统及其工作原理](https://www.niddk.nih.gov/health-information/digestive-diseases/digestive-system-how-it-works)
+- [NIDDK：肾脏及其工作原理](https://www.niddk.nih.gov/health-information/kidney-disease/kidneys-how-they-work)
+
+## 可复现导出
+
+从仓库根目录执行：
+
+```sh
+swiftc FoodJourney/Models/AnatomyArtwork.swift scripts/export-anatomy.swift -o /private/tmp/foodjourney-export-anatomy
+/private/tmp/foodjourney-export-anatomy "$PWD/Design/Anatomy/v2"
+```
+
+SVG 注册画布为 320 × 440；透明 PNG 为 640 × 880。App 与导出使用同一份路径源。v1 保留用于回看，没有覆盖历史素材。
+
+## 本轮验证
+
+2026-09-07，Xcode 构建通过；iPhone 16 / iOS 26.5 共 14 项单元测试、3 条 UI 场景分批通过：
+
+- `/private/tmp/foodjourney-meal-v2-2.xcresult`：14 项单元测试全部通过；鸡胸肉和器官 UI 通过，米饭关闭小结后打开报告失败。
+- 关闭改为明确更新父视图的展示状态；测试等待弹层确实消失、报告按钮可点。
+- `/private/tmp/foodjourney-meal-v2-3.xcresult`：最终 3 条 UI 流程全部通过，0 失败、0 跳过。
+- 已核验「聚焦胃时小肠中仍有金色粒子」与「鸡胸肉 200g 的胰腺过程/结果」实际截图。
+- 验证所有新器官 PNG 有透明通道；图标为 1024 × 1024 无透明通道。
+- 修复测试中发现的 SwiftUI `Path.contains` 对成人凹轮廓 y=217 扫描线误判：同一渲染路径使用 CoreGraphics winding containment，增加扫描线内外点回归，不移动肾脏规避问题。
+- 预演页顶部不再显示旧模型的 ATP / 尿酸估算；旧报告页仍保留，需用户确认下一轮教育化重构。
+
+本轮不等于全部产品验收：尚未覆盖真机、小屏、动态大字体与减弱动态效果，也未校准旧报告模型。

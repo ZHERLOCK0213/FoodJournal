@@ -3,15 +3,15 @@ import SwiftUI
 /// live 会话画布渲染（复用 DigestionCanvasRenderer 的背景/路径/器官，新增动态层）
 struct LiveSessionRenderer {
     // 胰腺、肾：prototypeOrgans 之外的脏器，位置在身体轮廓内（240×370 坐标）
-    static let pancreasPos = (cx: CGFloat(78), cy: CGFloat(150))
-    static let kidneyPos   = (cx: CGFloat(168), cy: CGFloat(170))
+    static let pancreasPos = (cx: CGFloat(120), cy: CGFloat(150))
+    static let kidneyPos   = (cx: CGFloat(170), cy: CGFloat(218))
 
     /// live 会话额外脏器（与 prototypeOrgans 同用 drawOrgan 绘制，风格统一）
     static let liveExtraOrgans: [Organ] = [
-        Organ(id: "pancreas", label: "胰腺", cx: pancreasPos.cx, cy: pancreasPos.cy, rx: 13, ry: 8,
+        Organ(id: "pancreas", label: "胰腺", cx: pancreasPos.cx, cy: pancreasPos.cy, rx: 30, ry: 7,
               color: "#6a4a30", highlightColor: "#cc8855", time: nil,
               detailTitle: nil, detailDesc: nil, detailTags: nil),
-        Organ(id: "kidney", label: "肾", cx: kidneyPos.cx, cy: kidneyPos.cy, rx: 11, ry: 14,
+        Organ(id: "kidney", label: "肾", cx: kidneyPos.cx, cy: kidneyPos.cy, rx: 9, ry: 13,
               color: "#4a2a3a", highlightColor: "#aa5577", time: nil,
               detailTitle: nil, detailDesc: nil, detailTags: nil),
     ]
@@ -23,15 +23,15 @@ struct LiveSessionRenderer {
     static let residueStruct = AppTheme.primaryLight
     static let residueOver   = Color(hex: "D85A30")!
 
-    /// 脏器在消化道路径上的 t 值（与泡泡 popThreshold 一致）；用于按粒子到达揭示残留
+    /// 脏器在消化道路径上的 t 值（t≈点索引/(n-1)，与新 points 分段一致）；用于按粒子到达揭示残留
     static func organPathT(_ organ: DigestiveOrgan) -> Double {
         switch organ {
-        case .stomach:        0.30
-        case .smallIntestine: 0.50
-        case .pancreas:       0.55
-        case .liver:          0.58
-        case .kidney:         0.70
-        case .largeIntestine: 0.88
+        case .stomach:        0.19   // 胃 J 段
+        case .pancreas:       0.28   // 十二指肠附近（点 10–11），胰液入此
+        case .liver:          0.40   // 小肠吸收后经门静脉入肝
+        case .smallIntestine: 0.44   // 小肠盘曲中段（点 15–16）
+        case .kidney:         0.56   // 吸收后代谢排泄
+        case .largeIntestine: 0.64   // 盲肠/升结肠入口
         }
     }
 

@@ -13,7 +13,6 @@ struct Particle: Identifiable {
 enum ParticlePathType {
     case main          // 主消化道（口腔→食道→胃→小肠→大肠）
     case liverBranch   // 小肠→肝脏（门静脉）
-    case liverReturn   // 肝脏→回流
 }
 
 /// 粒子系统管理器
@@ -44,12 +43,6 @@ class ParticleSystem: ObservableObject {
             pathType: .liverBranch
         ))
 
-        // 肝脏回流粒子
-        particles.append(Particle(
-            t: CGFloat.random(in: 0.1...0.5),
-            speed: 0.025 + CGFloat.random(in: 0...0.01),
-            pathType: .liverReturn
-        ))
     }
 
     /// 每帧更新粒子位置
@@ -69,8 +62,6 @@ class ParticleSystem: ObservableObject {
             return DigestionPath.catmullRom(points: DigestionPath.points, t: particle.t)
         case .liverBranch:
             return DigestionPath.catmullRom(points: DigestionPath.liverBranchPoints, t: particle.t)
-        case .liverReturn:
-            return DigestionPath.catmullRom(points: DigestionPath.liverReturnPoints, t: particle.t)
         }
     }
 
@@ -85,8 +76,6 @@ class ParticleSystem: ObservableObject {
             aheadPos = DigestionPath.catmullRom(points: DigestionPath.points, t: aheadT)
         case .liverBranch:
             aheadPos = DigestionPath.catmullRom(points: DigestionPath.liverBranchPoints, t: aheadT)
-        case .liverReturn:
-            aheadPos = DigestionPath.catmullRom(points: DigestionPath.liverReturnPoints, t: aheadT)
         }
 
         return atan2(aheadPos.y - pos.y, aheadPos.x - pos.x)

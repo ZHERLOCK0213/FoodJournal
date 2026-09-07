@@ -30,9 +30,10 @@ struct DigestiveCanvasView: View {
 
                 // 人体轮廓
                 DigestionCanvasRenderer.drawBodyOutline(context: context)
+                DigestionCanvasRenderer.drawBodyCutaway(context: context)
 
                 // 消化道路径
-                DigestionCanvasRenderer.drawPath(context: context)
+                DigestionCanvasRenderer.drawPath(context: context, showAbsorptionPath: true)
 
                 // 器官
                 for organ in viewModel.organs {

@@ -75,6 +75,14 @@ final class UserPreferences {
     private static let storageKey = "FoodJourney.UserPreferences.v1"
 
     init() {
+        // UI 自动化使用稳定、无个人数据的起始状态，不读取或改写 Simulator 中的持久化偏好。
+        if ProcessInfo.processInfo.arguments.contains("-uiTesting") {
+            hasCompletedOnboarding = true
+            hasChronicCondition = false
+            conditions = []
+            focus = .calories
+            return
+        }
         let defaults = UserDefaults.standard
         if let data = defaults.data(forKey: Self.storageKey),
            let decoded = try? JSONDecoder().decode(Stored.self, from: data) {

@@ -41,8 +41,8 @@ extension Organ {
     /// 从 HTML 原型翻译的器官数据（基于 240×370 画布）
     static let prototypeOrgans: [Organ] = [
         Organ(
-            id: "mouth", label: "口腔", cx: 120, cy: 28, rx: 30, ry: 12,
-            color: "#7F77DD", highlightColor: "#7F77DD", time: "0–2 min",
+            id: "mouth", label: nil, cx: 153, cy: 43, rx: 20, ry: 10,
+            color: "#2B2345", highlightColor: "#7F77DD", time: "0–2 min",
             detailTitle: "口腔 · 0–2 分钟",
             detailDesc: "唾液淀粉酶将约15%的支链淀粉初步分解为麦芽糖。咀嚼增大酶接触面积。",
             detailTags: [
@@ -57,7 +57,7 @@ extension Organ {
             detailTitle: nil, detailDesc: nil, detailTags: nil
         ),
         Organ(
-            id: "stomach", label: "胃", cx: 103, cy: 112, rx: 38, ry: 34,
+            id: "stomach", label: "胃", cx: 145, cy: 126, rx: 26, ry: 32,
             color: "#533a6a", highlightColor: "#9977cc", time: "15–30m",
             detailTitle: "胃 · 15–30 分钟",
             detailDesc: "胃酸（pH 2）使淀粉酶失活，暂停淀粉消化。胃蛋白酶开始分解蛋白质为多肽。蠕动研磨食糜为细颗粒。",
@@ -69,7 +69,7 @@ extension Organ {
             ]
         ),
         Organ(
-            id: "liver", label: "肝脏", cx: 155, cy: 100, rx: 22, ry: 20,
+            id: "liver", label: "肝脏", cx: 82, cy: 122, rx: 32, ry: 24,
             color: "#6a3a20", highlightColor: "#cc8855", time: nil,
             detailTitle: "肝脏 · 吸收后处理",
             detailDesc: "门静脉将葡萄糖送达肝脏。肝脏决定：合成糖原储存、转脂肪，或释放入血。同时分泌胆汁辅助脂肪乳化。",
@@ -81,7 +81,7 @@ extension Organ {
             ]
         ),
         Organ(
-            id: "small", label: "小肠", cx: 112, cy: 192, rx: 44, ry: 40,
+            id: "small", label: "小肠", cx: 115, cy: 215, rx: 28, ry: 34,
             color: "#1D4a35", highlightColor: "#5DCAA5", time: "30–90m",
             detailTitle: "小肠 · 30–90 分钟",
             detailDesc: "胰淀粉酶彻底分解淀粉为葡萄糖。胰蛋白酶分解蛋白质为氨基酸。胆汁乳化脂肪为微粒。肠绒毛经载体主动吸收入血。",
@@ -95,7 +95,7 @@ extension Organ {
             ]
         ),
         Organ(
-            id: "large", label: "大肠", cx: 112, cy: 262, rx: 52, ry: 36,
+            id: "large", label: "大肠", cx: 151, cy: 196, rx: 36, ry: 40,
             color: "#1a2a10", highlightColor: "#639922", time: "2–10h",
             detailTitle: "大肠 · 2–10 小时",
             detailDesc: "膳食纤维经菌群发酵产生短链脂肪酸（丁酸、丙酸）。水分重吸收，残渣成型。未吸收的胆汁色素赋予粪便颜色。",

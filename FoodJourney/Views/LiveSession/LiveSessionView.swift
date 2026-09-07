@@ -11,9 +11,7 @@ struct LiveSessionView: View {
         VStack(spacing: 0) {
             navbar
             foodChips
-            TimelineView(.animation(minimumInterval: 1.0 / 60.0)) { timeline in
-                LiveSessionCanvasView(viewModel: viewModel, date: timeline.date)
-            }
+            AnatomyExplorerView(viewModel: viewModel)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             bottomBar
         }
@@ -39,7 +37,9 @@ struct LiveSessionView: View {
                     showEatenList = true
                 } label: {
                     HStack(spacing: 3) {
-                        Text(viewModel.session.cumulativeReportText)
+                        Text(viewModel.session.foodCount == 0
+                             ? "选择食物，观察消化旅程"
+                             : "已预演 \(viewModel.session.foodCount) 份 · 查看食物记录")
                             .font(.system(size: 9)).foregroundColor(AppTheme.primaryLight.opacity(0.85))
                             .lineLimit(2)
                         if viewModel.session.foodCount > 0 {
@@ -76,18 +76,35 @@ struct LiveSessionView: View {
                 ForEach(viewModel.foods) { food in
                     FoodChipView(food: food,
                                  isSelected: viewModel.selectedFood?.id == food.id,
-                                 grams: 100) {
+                                 grams: viewModel.selectedGrams) {
                         viewModel.selectedFood = food
                     }
                 }
             }
             .padding(.horizontal, 12).padding(.vertical, 8)
         }
+        .disabled(viewModel.phase != .idle)
+        .accessibilityIdentifier("food-picker")
         .background(Color(hex: "111128")!)
     }
 
     private var bottomBar: some View {
         HStack(spacing: 10) {
+            Menu {
+                ForEach([50, 100, 200, 300], id: \.self) { grams in
+                    Button("\(grams)g") { viewModel.selectedGrams = Double(grams) }
+                        .accessibilityIdentifier("portion-\(grams)")
+                }
+            } label: {
+                HStack(spacing: 3) {
+                    Text("\(Int(viewModel.selectedGrams))g")
+                    Image(systemName: "chevron.up.chevron.down").font(.system(size: 9))
+                }.font(.system(size: 12, weight: .medium)).frame(minWidth: 55, minHeight: 44)
+            }
+            .disabled(viewModel.phase != .idle)
+            .accessibilityLabel("食物份量")
+            .accessibilityValue("\(Int(viewModel.selectedGrams))g")
+            .accessibilityIdentifier("portion-picker")
             // 选食物
             Button {
                 viewModel.eatIn()
@@ -97,12 +114,13 @@ struct LiveSessionView: View {
                     Image(systemName: "arrow.down.circle.fill").font(.system(size: 13))
                 }
                 .foregroundColor(.white)
-                .padding(.horizontal, 16).padding(.vertical, 12)
+                .padding(.horizontal, 12).padding(.vertical, 12)
                 .background(viewModel.canEat ? AppTheme.primary : Color(hex: "333344")!)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain)
             .disabled(!viewModel.canEat)
+            .accessibilityIdentifier("eat-button")
 
             Spacer()
 
@@ -121,6 +139,7 @@ struct LiveSessionView: View {
             }
             .buttonStyle(.plain)
             .disabled(!viewModel.canFinish)
+            .accessibilityIdentifier("report-button")
         }
         .padding(.horizontal, 12).padding(.vertical, 8)
         .background(Color(hex: "111128")!)
