@@ -12,3 +12,8 @@ build/
 # SwiftPM
 .build/
 .swiftpm/
+
+# Personal runtime data must never be committed, including accidental exports.
+personal-foods.json
+FoodJourney.UserPreferences*.json
+*.xcresult/

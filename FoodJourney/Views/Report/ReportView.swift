@@ -1,219 +1,238 @@
 import SwiftUI
 
-/// 报告页：累积代谢 + 不可吸收/残留 + 脏器过载（镜头重点） + 问卷分析 + 引用注脚
+/// Whole-meal intake analysis and qualitative organ roles. No capacity-derived clinical outputs.
 struct ReportView: View {
     let session: DigestionSession
     let prefs: UserPreferences
-    @Environment(\.colorScheme) private var colorScheme
-    @State private var showCapacityInfo = false
+    @State private var selectedRole: PancreasRole?
+    private var meal: MealEducationSummary { MealEducationSummary(items: session.items) }
+    private var urateEducation: UrateEducation? { UrateEducation(focus: prefs.focus, meal: meal) }
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 16) {
-                summaryCard
-                absorbedCard
-                residuesCard
-                overloadCard
-                adviceCard
+            VStack(alignment: .leading, spacing: 16) {
+                if meal.foodCount == 0 {
+                    ContentUnavailableView("还没有预演食物", systemImage: "fork.knife",
+                                           description: Text("先回到消化预演，选择一份食物。"))
+                        .accessibilityIdentifier("report-empty")
+                } else {
+                    compositionCard
+                    if let analysis = MealFocusAnalysis(items: session.items, focus: prefs.focus) {
+                        MealFocusAnalysisView(analysis: analysis, hydration: prefs.hydration).reportCard()
+                    }
+                    foodsCard
+                    if let urateEducation {
+                        DisclosureGroup("嘌呤与尿酸") {
+                            UrateEducationView(education: urateEducation, scope: mealScope)
+                        }.accessibilityIdentifier("report-urate-toggle").reportCard()
+                    }
+                    pancreasCard
+                    organCard
+                    sourceCard
+                }
             }
-            .padding(16)
-            // iOS 26 的悬浮 Tab 栏会覆盖滚动内容；留出空间以确保最后一张卡片可完整查看。
-            .padding(.bottom, 88)
+            .padding(16).padding(.bottom, 88)
         }
-        .background(Color(hex: "0d0d1a")!)
+        .accessibilityIdentifier("meal-report-scroll")
+        .background(AnatomyArtwork.color("0D1020"))
         .preferredColorScheme(.dark)
         .navigationTitle("代谢报告").navigationBarTitleDisplayMode(.inline)
-    }
-
-    // MARK: 累积代谢
-
-    private var summaryCard: some View {
-        let kidneyHighlight = prefs.highlightedOrgans.contains(.kidney)
-        return VStack(alignment: .leading, spacing: 10) {
-            Text("累积代谢").font(.system(size: 15, weight: .bold)).foregroundColor(.white)
-            row("食物份数", "\(session.foodCount)")
-            row("摄入热量", "\(Int(session.totalCalories)) kcal")
-            row("实际产 ATP", "\(String(format: "%.2f", session.totalATP)) mol")
-            row("CO₂", "\(Int(session.totalCO2)) g")
-            row("代谢水", "\(Int(session.totalWater)) g")
-            Divider().background(Color(hex: "2a2a44")!).padding(.vertical, 1)
-            // 尿酸（肝产嘌呤、肾排）
-            Text("尿酸（嘌呤代谢）").font(.system(size: 12, weight: .semibold)).foregroundColor(AppTheme.primaryLight)
-            row("肝产尿酸", "\(Int(session.totalUricAcidProducedMg)) mg", highlight: kidneyHighlight)
-            row("尿酸滞留", "\(Int(session.totalUricAcidRetainedMg)) mg", highlight: kidneyHighlight)
-            // 尿素（肝脱氨、肾排）
-            Text("尿素（蛋白脱氨）").font(.system(size: 12, weight: .semibold)).foregroundColor(AppTheme.primaryLight)
-            row("肝产尿素", "\(Int(session.totalUreaProducedMg)) mg", highlight: kidneyHighlight)
-            row("尿素滞留", "\(Int(session.totalUreaRetainedMg)) mg", highlight: kidneyHighlight)
+        .onChange(of: session.foodCount) { _, count in
+            if count == 0 { selectedRole = nil }
         }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(hex: "111128")!).clipShape(RoundedRectangle(cornerRadius: 14))
-    }
-
-    // MARK: 吸收物（身体得到了什么）
-
-    private var absorbedCard: some View {
-        let pancreasHighlight = prefs.highlightedOrgans.contains(.pancreas)
-        return VStack(alignment: .leading, spacing: 10) {
-            Text("吸收物（身体得到）").font(.system(size: 15, weight: .bold)).foregroundColor(.white)
-            row("葡萄糖入血", "\(String(format: "%.1f", session.totalAbsorbedGlucoseG)) g", highlight: pancreasHighlight)
-            row("血糖负荷", "\(Int(session.totalBloodGlucoseMg)) mg", highlight: pancreasHighlight)
-            row("胰岛素响应", "\(String(format: "%.1f", session.totalInsulinResponse))", highlight: pancreasHighlight)
-            row("氨基酸入肝", "\(String(format: "%.1f", session.totalAbsorbedAminoAcidG)) g")
-            row("脂肪酸入淋巴", "\(String(format: "%.1f", session.totalAbsorbedFattyAcidG)) g")
+        .sheet(item: $selectedRole) { role in
+            PancreasProcessView(meal: meal, scope: mealScope, role: role)
         }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(hex: "111128")!).clipShape(RoundedRectangle(cornerRadius: 14))
     }
 
-    // MARK: 残留
+    private var mealScope: String {
+        "本餐合计 · \(meal.distinctFoodCount) 种 · \(meal.foodCount) 份记录"
+    }
 
-    private var residuesCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("不可吸收 / 残留产物").font(.system(size: 14, weight: .semibold)).foregroundColor(.white)
-            if session.residues.isEmpty {
-                Text("无残留，代谢完整").font(.system(size: 12)).foregroundColor(AppTheme.textSecondary(scheme: colorScheme))
-            } else {
-                ForEach(session.residues) { r in
-                    HStack {
-                        Text(r.foodName).font(.system(size: 12, weight: .medium)).foregroundColor(AppTheme.primaryLight)
-                        Text("· \(r.organ.rawValue)").font(.system(size: 11)).foregroundColor(AppTheme.textSecondary(scheme: colorScheme))
-                        Spacer()
-                        Text("\(r.substance) \(String(format: "%.1f", r.amount))g")
-                            .font(.system(size: 11))
-                            .foregroundColor(r.kind == .structural ? AppTheme.primaryLight : Color(hex: "D85A30")!)
-                    }
-                }
+    private var compositionCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("本餐食物成分").font(.headline)
+            Text("\(meal.distinctFoodCount) 种 · \(meal.foodCount) 份记录 · 合计 \(MealEducationSummary.gramsText(meal.grams))")
+                .font(.subheadline).foregroundStyle(.secondary)
+            metric("碳水化合物", meal.carbs, id: "carbs")
+            metric("蛋白质", meal.protein, id: "protein")
+            metric("脂肪", meal.fat, id: "fat")
+            metric("纤维", meal.fiberText, id: "fiber")
+            if !meal.fiberIsComplete {
+                Text("未提供纤维：\(meal.missingFiberFoods.joined(separator: "、"))。")
+                    .font(.caption).foregroundStyle(.secondary).lineSpacing(3)
+                    .accessibilityIdentifier("report-fiber-scope")
             }
-        }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(hex: "111128")!).clipShape(RoundedRectangle(cornerRadius: 14))
+            metric("乳糖", meal.matrix.totals.lactoseText, id: "lactose")
+            metric("嘌呤", optionalMilligrams(meal.matrix.totals.purine) + (meal.matrix.totals.purine == nil ? "" : meal.matrix.totals.purineQualifier), id: "purine")
+            metric("食物热量", "\(meal.calories.formatted(.number.precision(.fractionLength(0)))) kcal", id: "calories")
+            Text("食物成分参考，非个人吸收量。")
+                .font(.caption).foregroundStyle(.secondary).lineSpacing(3)
+        }.reportCard()
     }
 
-    // MARK: 内脏使用度
-
-    private var overloadCard: some View {
-        let events = session.results.flatMap { $0.overloads }
-        let overloadByOrgan = Dictionary(grouping: events, by: \.organ)
-            .mapValues { Array(Set($0.map(\.substance))).sorted() }
-        let usageOrgans: [DigestiveOrgan] = [.stomach, .smallIntestine, .liver, .pancreas, .kidney]
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 5) {
-                Text("内脏使用度").font(.system(size: 14, weight: .semibold)).foregroundColor(.white)
-                Button {
-                    showCapacityInfo = true
-                } label: {
-                    Image(systemName: "info.circle").font(.system(size: 12))
-                        .foregroundColor(AppTheme.textSecondary(scheme: colorScheme))
+    private var pancreasCard: some View {
+        DisclosureGroup("胰腺作用") {
+            ForEach(PancreasRole.allCases) { role in
+                Button { selectedRole = role } label: {
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 5) {
+                            Text(role.title).font(.subheadline.weight(.semibold))
+                            Text(role.subtitle).font(.caption).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right").font(.caption)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                    .padding(12).background(.white.opacity(0.04), in: RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
-                .popover(isPresented: $showCapacityInfo) {
-                    Text("本报告的内脏代谢能力条件为饮水充足、睡眠充足的前提下。")
-                        .font(.system(size: 12))
-                        .padding(12)
-                        .frame(maxWidth: 240)
-                        .presentationCompactAdaptation(.popover)
+                .accessibilityIdentifier("report-pancreas-\(role.rawValue)")
+            }
+        }.accessibilityIdentifier("report-pancreas-toggle").reportCard()
+    }
+
+    private var foodsCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("食物成分矩阵").font(.headline)
+            Text("相同食物与配方合并显示。")
+                .font(.caption).foregroundStyle(.secondary)
+            ForEach(meal.matrix.rows) { row in
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text(row.food.name).font(.subheadline.weight(.semibold))
+                            .accessibilityIdentifier("report-food-row-\(row.id)")
+                        Spacer()
+                        if row.portionCount > 1 {
+                            Text("合并 \(row.portionCount) 份").font(.caption.weight(.medium))
+                                .foregroundStyle(AppTheme.primaryLight)
+                                .accessibilityIdentifier("report-merged-count-\(row.id)")
+                        }
+                    }
+                    if row.food.isCustom {
+                        Text(row.food.portionSourceLabel).font(.caption).foregroundStyle(AppTheme.primaryLight)
+                    }
+                    nutrientMatrix(for: row)
+                    Text(auxiliaryText(for: row))
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .accessibilityIdentifier("report-auxiliary-\(row.id)")
+                    if !row.food.displayPreparation.isEmpty {
+                        DisclosureGroup {
+                            Text(row.food.displayPreparation)
+                                .font(.caption).foregroundStyle(.secondary).padding(.top, 4)
+                        } label: {
+                            Text("配方说明")
+                                .accessibilityIdentifier("report-source-toggle-\(row.id)")
+                        }.font(.caption)
+                    }
+                }
+                .padding(12)
+                .background(.white.opacity(0.03), in: RoundedRectangle(cornerRadius: 12))
+            }
+            Divider()
+            if meal.items.contains(where: { !$0.food.isCustom }) {
+                Text("公共食物参考网站").font(.subheadline.weight(.medium))
+                ForEach(FoodCompositionSource.allCases) { source in
+                    Link(source.title + " ↗", destination: source.url)
+                        .font(.caption)
+                        .accessibilityIdentifier("report-composition-source-\(source.id)")
                 }
             }
-            // 各脏器本次进食使用度
-            ForEach(usageOrgans, id: \.self) { organ in
-                organUsageRow(organ, overloadByOrgan: overloadByOrgan)
+            if meal.items.contains(where: { $0.food.isCustom }) {
+                Text("自建食物使用你填写的成分，不属于公共来源的验证范围。")
+                    .font(.caption).foregroundStyle(.secondary)
             }
-        }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(hex: "111128")!).clipShape(RoundedRectangle(cornerRadius: 14))
+        }.reportCard()
     }
 
-    /// 单脏器使用度行：名称 + 进度条 + 百分比；满载(100%)时整行转红并附滞留物质
-    private func organUsageRow(_ organ: DigestiveOrgan,
-                               overloadByOrgan: [DigestiveOrgan: [String]]) -> some View {
-        let ratio = session.usageRatio(organ)
-        let isMaxed = ratio >= 0.999            // 能力耗尽 = 100%
-        let substances = overloadByOrgan[organ]
-        // 胃/小肠过载不产生局部残留（靠降吸收体现），用功能性说明；肝/胰/肾用实际滞留物质
-        let overloadLabel: String
-        if let subs = substances {
-            overloadLabel = subs.joined(separator: "·")
-        } else {
-            switch organ {
-            case .stomach:        overloadLabel = "胃部负荷饱和"        // 胃只作饱腹指标，不门控吸收
-            case .smallIntestine: overloadLabel = "吸收能力饱和·吸收下降" // 小肠耗尽才会降吸收
-            default:              overloadLabel = organ.overloadSubstance
-            }
-        }
-        let highlighted = prefs.highlightedOrgans.contains(organ)
-        let barColor: Color = isMaxed ? Color(hex: "D85A30")!
-            : (highlighted ? AppTheme.primaryLight : AppTheme.primary)
-        return VStack(spacing: 4) {
-            HStack {
-                Text(organ.rawValue).font(.system(size: 12)).foregroundColor(.white)
-                Spacer()
-                Text("\(Int(ratio * 100))%")
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                    .foregroundColor(isMaxed ? Color(hex: "D85A30")!
-                        : (highlighted ? AppTheme.primaryLight : AppTheme.textSecondary(scheme: colorScheme)))
-            }
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color(hex: "2a2a44")!)
-                    Capsule().fill(barColor).frame(width: geo.size.width * ratio)
+    private var organCard: some View {
+        DisclosureGroup("其他器官如何协作") {
+            VStack(alignment: .leading, spacing: 16) {
+                ForEach(AnatomyPart.allCases.filter { $0 != .pancreas }) { part in
+                    VStack(alignment: .leading, spacing: 5) {
+                        Text(part.label).font(.subheadline.weight(.semibold)).foregroundStyle(AnatomyArtwork.asset(part).color)
+                        Text(meal.explanation(for: part)).font(.subheadline).lineSpacing(3)
+                        Link("NIDDK 来源 ↗", destination: part.source).font(.caption)
+                    }
                 }
-            }
-            .frame(height: 5)
-            if isMaxed {
-                Text(overloadLabel)
-                    .font(.system(size: 10))
-                    .foregroundColor(Color(hex: "D85A30")!)
-            }
-        }
+            }.padding(.top, 12)
+        }.font(.headline).reportCard()
     }
 
-    // MARK: 问卷分析
-
-    private var adviceCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Image(systemName: "lightbulb.fill").foregroundColor(AppTheme.carbColor)
-                Text("基于你的关注（\(prefs.focus.rawValue)）").font(.system(size: 14, weight: .semibold)).foregroundColor(.white)
+    private var sourceCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            DisclosureGroup("数据与来源说明") {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("数值按可食部分与份量换算。未提供不等于0；部分记录显示小计，微量不换算为具体克数。")
+                    Text("公共成分可能来自不同样本；品牌、配方与生熟状态影响数值。纤维可能采用总膳食纤维或不溶性纤维口径，不能视为统一口径的总膳食纤维。")
+                        .accessibilityIdentifier("report-nutrient-basis")
+                    Text("消化过程为生理示意，不能据此预测个人血糖、血尿酸或器官功能。")
+                    Link("消化与吸收 · NIDDK ↗", destination: AnatomyPart.smallIntestine.source)
+                    Link("胰岛素与葡萄糖 · NIDDK ↗", destination: PancreasRole.insulinSource)
+                }.padding(.top, 8)
             }
-            Text(advice).font(.system(size: 12)).foregroundColor(AppTheme.textSecondary(scheme: colorScheme)).lineSpacing(4)
-            Divider().background(Color(hex: "2a2a44")!).padding(.vertical, 2)
-            Text("营养数据来源：将接入权威数据库（USDA FoodData Central / 中国食物成分表）作为引用注脚。")
-                .font(.system(size: 9)).foregroundColor(AppTheme.textTertiary(scheme: colorScheme))
-        }
-        .padding(14).frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(hex: "111128")!).clipShape(RoundedRectangle(cornerRadius: 14))
+        }.font(.footnote).reportCard()
     }
 
-    private var advice: String {
-        var s = "本次共吃入 \(session.foodCount) 份。"
-        // 高尿酸镜头：尿酸来自嘌呤（非蛋白），三文鱼/鸡胸肉/红烧肉为高嘌呤
-        if prefs.highlightedOrgans.contains(.kidney) {
-            if session.totalUricAcidRetainedMg > 0 {
-                s += "你关注尿酸：本次尿酸滞留 \(Int(session.totalUricAcidRetainedMg))mg。尿酸由肝代谢嘌呤产生（与蛋白无关），三文鱼、鸡胸肉、红烧肉等嘌呤较高，建议避免连续大量摄入、多饮水促进肾排泄。"
-            } else if session.totalUricAcidProducedMg > 0 {
-                s += "你关注尿酸：本次产尿酸 \(Int(session.totalUricAcidProducedMg))mg，肾排泄正常无滞留。尿酸由肝代谢嘌呤产生，高嘌呤食物（三文鱼/鸡胸肉/红烧肉）连续摄入仍需留意。"
-            }
-        }
-        // 高血糖/胰岛素镜头：碳水→血糖→胰腺胰岛素
-        if prefs.highlightedOrgans.contains(.pancreas) {
-            s += "你关注血糖：本次血糖负荷 \(Int(session.totalBloodGlucoseMg))mg，胰岛素响应 \(String(format: "%.1f", session.totalInsulinResponse))。连续高碳水加重胰腺负担，米饭/馒头/面条等精制碳水宜分散摄入。"
-        }
-        if prefs.highlightedOrgans.contains(.liver) {
-            s += "高脂食物加重肝脏代谢负荷，留意脂肪堆积。"
-        }
-        if session.residues.contains(where: { $0.organ == .largeIntestine && $0.kind == .structural }) {
-            s += "部分纤维/乳糖在大肠残留，属正常生理现象。"
-        }
-        return s
+    private func metric(_ label: String, _ amount: Double, id: String) -> some View {
+        metric(label, MealEducationSummary.gramsText(amount), id: id)
     }
 
-    private func row(_ label: String, _ value: String, highlight: Bool = false) -> some View {
+    private func metric(_ label: String, _ value: String, id: String) -> some View {
         HStack {
-            Text(label).font(.system(size: 12)).foregroundColor(AppTheme.textSecondary(scheme: colorScheme))
+            Text(label)
+            if prefs.focus.metricID == id {
+                Image(systemName: "bookmark.fill").font(.caption).accessibilityLabel("关注成分")
+            }
             Spacer()
-            Text(value).font(.system(size: 13, weight: .semibold, design: .monospaced))
-                .foregroundColor(highlight ? Color(hex: "D85A30")! : .white)
+            Text(value).monospacedDigit().multilineTextAlignment(.trailing)
         }
+        .font(.subheadline)
+        .fontWeight(prefs.focus.metricID == id ? .semibold : .regular)
+        .foregroundStyle(prefs.focus.metricID == id ? AppTheme.primaryLight : Color.primary)
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("report-total-\(id)")
+        .accessibilityValue(value)
+    }
+
+    private func nutrientMatrix(for row: MealNutrientMatrix.Row) -> some View {
+        Grid(horizontalSpacing: 8, verticalSpacing: 4) {
+            GridRow {
+                ForEach(["克重", "碳水", "蛋白", "脂肪", "热量(kcal)"], id: \.self) { label in
+                    Text(label).frame(maxWidth: .infinity)
+                }
+            }.font(.caption2).foregroundStyle(.secondary)
+            GridRow {
+                Text(MealEducationSummary.gramsText(row.grams))
+                Text(MealEducationSummary.gramsText(row.carbs))
+                Text(MealEducationSummary.gramsText(row.protein))
+                Text(MealEducationSummary.gramsText(row.fat))
+                Text("\(row.calories.formatted(.number.precision(.fractionLength(0))))")
+            }.font(.caption.monospacedDigit())
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("report-primary-\(row.id)")
+        .accessibilityValue("克重 \(MealEducationSummary.gramsText(row.grams))，碳水 \(MealEducationSummary.gramsText(row.carbs))，蛋白 \(MealEducationSummary.gramsText(row.protein))，脂肪 \(MealEducationSummary.gramsText(row.fat))，热量 \(row.calories.formatted(.number.precision(.fractionLength(0)))) kcal")
+    }
+
+    private func auxiliaryText(for row: MealNutrientMatrix.Row) -> String {
+        var known: [String] = []
+        if let fiber = row.fiber { known.append("纤维 \(MealEducationSummary.gramsText(fiber))") }
+        if row.lactose != nil || row.values.lactoseHasTrace { known.append("乳糖 \(row.values.lactoseText)") }
+        if let purine = row.purine { known.append("嘌呤 \(purine.formatted(.number.precision(.fractionLength(1))))mg\(row.values.purineQualifier)") }
+        return known.isEmpty ? "纤维、乳糖、嘌呤未提供" : known.joined(separator: " · ") + (known.count < 3 ? " · 其余未提供" : "")
+    }
+
+    private func optionalMilligrams(_ value: Double?) -> String {
+        value.map { $0.formatted(.number.precision(.fractionLength(1))) + "mg" } ?? "暂无记录"
+    }
+
+}
+
+private extension View {
+    func reportCard() -> some View {
+        self.padding(16).frame(maxWidth: .infinity, alignment: .leading)
+            .background(.white.opacity(0.035), in: RoundedRectangle(cornerRadius: 16))
+            .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.white.opacity(0.07)))
     }
 }

@@ -6,6 +6,23 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		A1B2C3D40000000000000004 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1D0860442FEAC3350020DC59 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1D08604B2FEAC3350020DC59;
+			remoteInfo = FoodJourney;
+		};
+		A1B2C3D4000000000000000F /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1D0860442FEAC3350020DC59 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1D08604B2FEAC3350020DC59;
+			remoteInfo = FoodJourney;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		1D08604C2FEAC3350020DC59 /* FoodJourney.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FoodJourney.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1B2C3D40000000000000001 /* FoodJourneyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FoodJourneyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -76,23 +93,6 @@
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
-
-/* Begin PBXContainerItemProxy section */
-		A1B2C3D40000000000000004 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1D0860442FEAC3350020DC59 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 1D08604B2FEAC3350020DC59;
-			remoteInfo = FoodJourney;
-		};
-		A1B2C3D4000000000000000F /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 1D0860442FEAC3350020DC59 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 1D08604B2FEAC3350020DC59;
-			remoteInfo = FoodJourney;
-		};
-/* End PBXContainerItemProxy section */
 
 /* Begin PBXNativeTarget section */
 		1D08604B2FEAC3350020DC59 /* FoodJourney */ = {

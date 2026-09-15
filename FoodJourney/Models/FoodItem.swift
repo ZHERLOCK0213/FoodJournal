@@ -7,6 +7,10 @@ struct FoodItem: Identifiable {
     var grams: Double
     var isSelected: Bool = false
 
+    var knownFiberGrams: Double? { food.knownFiberPer100g.map { $0 * grams / 100 } }
+    var knownLactoseGrams: Double? { food.knownLactosePer100g.map { $0 * grams / 100 } }
+    var knownPurineMg: Double? { food.knownPurinePer100g.map { $0 * grams / 100 } }
+
     /// 碳水克数（按实际克重换算）
     var carbGrams: Double {
         food.carbPer100g * grams / 100.0

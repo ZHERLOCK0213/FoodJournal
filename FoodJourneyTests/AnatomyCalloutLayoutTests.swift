@@ -49,9 +49,11 @@ final class AnatomyCalloutLayoutTests: XCTestCase {
         let b = MealDigestionJourney(item: FoodItem(food: food, grams: 200))
         XCTAssertTrue(a.calloutData(for: .stomach).contains("31.0g"))
         XCTAssertTrue(b.calloutData(for: .stomach).contains("62.0g"))
-        XCTAssertTrue(b.calloutData(for: .largeIntestine).contains("0.0g"))
-        for part: AnatomyPart in [.liver, .pancreas, .kidneys] {
+        XCTAssertTrue(b.calloutData(for: .largeIntestine).contains("待补充"))
+        for part: AnatomyPart in [.liver, .kidneys] {
             XCTAssertTrue(b.calloutData(for: part).contains("未估算"))
         }
+        XCTAssertEqual(b.calloutData(for: .pancreas), "消化酶 · 胰岛素")
+        XCTAssertTrue(b.outcome(for: .pancreas)!.result.contains("分泌量未估算"))
     }
 }

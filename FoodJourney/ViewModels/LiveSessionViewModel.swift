@@ -21,7 +21,9 @@ struct OrganBubble: Identifiable {
 final class LiveSessionViewModel {
     let session = DigestionSession()
 
-    let foods: [Food] = FoodDatabase.allFoods
+    let library: FoodLibrary
+    var foods: [Food] { library.foods }
+    init(library: FoodLibrary = FoodLibrary()) { self.library = library }
     var selectedFood: Food?
     var selectedGrams: Double = 100
     private(set) var journey: MealDigestionJourney?
@@ -39,16 +41,36 @@ final class LiveSessionViewModel {
     private var timer: Timer?
     private var lastTickDate = Date()
 
-    var canEat: Bool { phase == .idle && selectedFood != nil }
+    var canEat: Bool {
+        guard phase == .idle, let selectedFood else { return false }
+        return session.canAddEducation(selectedFood)
+    }
+    var selectionBlockReason: String? {
+        guard let selectedFood else { return nil }
+        if !selectedFood.canPreview { return "成分数据待补充，暂不能预演" }
+        if !session.canAddEducation(selectedFood) { return "本餐已有10种食品；可继续添加已有食品，或删除某一种后再添加新食品。" }
+        return nil
+    }
     var canFinish: Bool { session.foodCount > 0 && phase == .idle }
+
+    /// Narrative windows, not estimates of digestion time or insulin response timing.
+    var pancreasRoleDuringPreview: PancreasRole? {
+        guard phase == .digesting, let journey else { return nil }
+        let meal = MealEducationSummary(items: [journey.item])
+        if meal.hasDigestibleNutrients && (0.18..<0.43).contains(progress) { return .digestion }
+        if meal.carbs > 0 && (0.45..<0.78).contains(progress) { return .glucose }
+        return nil
+    }
 
     /// Capture the food and portion at ingestion; later picker changes must not alter this journey.
     func eatIn() {
+        if let food = selectedFood, food.isCustom { selectedFood = library.food(with: food.catalogID) }
         guard canEat, let food = selectedFood, selectedGrams.isFinite, selectedGrams > 0 else { return }
         let item = FoodItem(food: food, grams: selectedGrams)
         settledResidueCount = session.residues.count   // 记录本份之前的沉淀量
-        let result = session.ingest(item)
-        bubbles = makeBubbles(for: result, food: food)
+        guard session.recordEducation(item) else { return }
+        library.recordUse(food)
+        bubbles = []
         journey = MealDigestionJourney(item: item)
         completedJourneyID = nil
         phase = .descending
@@ -146,7 +168,7 @@ final class LiveSessionViewModel {
     /// 删除已吃入的某一份（点错重复时用）；重放后清掉临时泡泡
     func removeEaten(at index: Int) {
         stopTimer()
-        session.remove(at: index)
+        session.removeEducation(at: index)
         bubbles = []
         journey = nil
         completedJourneyID = nil

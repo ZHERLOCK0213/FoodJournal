@@ -4,6 +4,28 @@ import XCTest
 @MainActor
 final class DigestionSessionTests: XCTestCase {
 
+    // Legacy regression only: these abstract capacities are NOT physiological measurements.
+    func testLegacyPancreasChangesForFreshPorkAndBunSession() throws {
+        let session = DigestionSession()
+        _ = session.ingest(FoodItem(food: try food(named: "红烧肉"), grams: 100))
+        XCTAssertEqual(session.usageRatio(.pancreas), 0.024, accuracy: 0.001)
+        _ = session.ingest(FoodItem(food: try food(named: "馒头"), grams: 100))
+        XCTAssertEqual(session.usageRatio(.pancreas), 0.4, accuracy: 0.001)
+        XCTAssertEqual(session.totalInsulinResponse, 50, accuracy: 0.001)
+    }
+
+    func testLegacyPancreasCapacityCanPlateauDespiteMoreFood() throws {
+        let session = DigestionSession()
+        let bun = FoodItem(food: try food(named: "馒头"), grams: 300)
+        _ = session.ingest(bun)
+        XCTAssertEqual(session.usageRatio(.pancreas), 1, accuracy: 0.001)
+        let response = session.totalInsulinResponse
+        _ = session.ingest(bun)
+        XCTAssertEqual(session.foodCount, 2)
+        XCTAssertEqual(session.usageRatio(.pancreas), 1, accuracy: 0.001)
+        XCTAssertEqual(session.totalInsulinResponse, response, accuracy: 0.001)
+    }
+
     func testIngestAccumulatesFoodAndConsumesCapacity() throws {
         let rice = try food(named: "米饭")
         let session = DigestionSession()

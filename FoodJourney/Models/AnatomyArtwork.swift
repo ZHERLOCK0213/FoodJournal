@@ -26,7 +26,7 @@ enum AnatomyPart: String, CaseIterable, Identifiable {
         case .duodenum: ("胃排出的食糜与胆汁、胰液混合，继续消化。", "食物成分进一步分解，向后续小肠移动。")
         case .liver: ("制造胆汁，并对肠道吸收后送来的营养物质进行加工、储存和分配。", "胆汁帮助脂肪消化；营养物质供身体使用。")
         case .gallbladder: ("储存肝脏制造的胆汁，进食时将胆汁释放到小肠。", "胆汁帮助脂肪消化。")
-        case .pancreas: ("向小肠输送胰液，其中的酶参与碳水、脂肪和蛋白质的消化。", "帮助食物分解为更易吸收的成分。")
+        case .pancreas: ("胰液中的酶帮助小肠消化；胰岛素等激素通过血液参与调节。", "帮助分解食物，并参与血糖调节。食团不进入胰腺。")
         case .kidneys: ("过滤血液，回收身体需要的物质，并调节水与电解质的平衡。", "多余水分和代谢废物随尿液排出。")
         case .smallIntestine: ("继续消化食物，并经肠壁吸收大部分营养物质。", "糖、氨基酸等进入血液，部分脂肪经淋巴运输。")
         case .largeIntestine: ("吸收水分，肠道菌群参与剩余部分物质的分解。", "剩余内容物逐渐形成粪便，进入直肠。")
@@ -62,9 +62,11 @@ struct AnatomyAsset: Identifiable {
 enum AnatomyArtwork {
     static let size = CGSize(width: 320, height: 440)
     /// Cropped lower-face/neck context only. No scalp, eyes, arms or thighs in the live canvas.
-    static let cutawayData = "M 141 48 L 141 82 Q 148 91 144 105 L 101 116 M 194 56 L 195 61 L 188 64 L 194 68 Q 194 78 184 82 L 177 83 L 178 105 L 223 116"
-    // Adult head (~65 units) and elongated torso; no infant face or short limbs.
-    static let bodyData = "M 143 16 C 157 9 177 13 186 25 Q 192 34 190 43 L 199 52 Q 201 55 194 56 L 195 61 L 188 64 L 194 68 Q 194 78 184 82 L 177 83 L 178 105 C 190 115 213 113 232 126 C 248 139 251 166 255 190 L 261 228 Q 268 245 271 265 L 280 303 L 289 320 L 301 331 Q 304 336 300 337 L 290 330 L 298 346 Q 299 351 295 351 L 285 337 L 290 355 Q 290 360 286 358 L 278 341 L 281 359 Q 280 364 276 360 L 270 343 L 270 356 Q 268 361 265 356 L 260 335 L 261 314 C 248 292 239 267 237 249 L 230 217 L 227 186 C 223 210 222 228 224 247 L 222 274 C 224 296 235 320 237 341 C 239 370 236 408 231 434 L 175 434 L 166 393 Q 160 383 154 393 L 145 434 L 89 434 C 84 408 81 370 83 341 C 85 320 96 296 98 274 L 96 247 C 98 228 97 210 93 186 L 90 217 L 83 249 C 81 267 72 292 59 314 L 60 335 L 55 356 Q 52 361 50 356 L 50 343 L 44 360 Q 40 364 39 359 L 42 341 L 34 358 Q 30 360 30 355 L 35 337 L 25 351 Q 21 351 22 346 L 30 330 L 20 337 Q 16 336 19 331 L 31 320 L 40 303 L 49 265 Q 52 245 59 228 L 65 190 C 69 166 72 139 88 126 C 107 113 128 116 140 105 L 141 86 C 130 76 127 63 128 46 Q 129 25 143 16 Z"
+    /// Round the visible back of the head into the nape; keep the mouth registration fixed.
+    static let cutawayData = "M 123 48 C 123 64 129 77 139 84 C 147 90 144 101 140 105 C 132 113 114 112 101 116 M 194 56 L 195 61 L 188 64 L 194 68 Q 194 78 184 82 L 177 83 C 177 91 175 100 178 105 C 186 112 208 112 223 116"
+    // Rounded adult cranial vault with a horizontal tangent at the crown seam.
+    // Soften the occiput-to-neck transition without moving the mouth or organ registration.
+    static let bodyData = "M 158 12 C 177 12 190 25 190 40 C 190 45 194 48 199 52 Q 201 55 194 56 L 195 61 L 188 64 L 194 68 Q 194 78 184 82 L 177 83 C 177 91 175 100 178 105 C 190 115 213 113 232 126 C 248 139 251 166 255 190 L 261 228 Q 268 245 271 265 L 280 303 L 289 320 L 301 331 Q 304 336 300 337 L 290 330 L 298 346 Q 299 351 295 351 L 285 337 L 290 355 Q 290 360 286 358 L 278 341 L 281 359 Q 280 364 276 360 L 270 343 L 270 356 Q 268 361 265 356 L 260 335 L 261 314 C 248 292 239 267 237 249 L 230 217 L 227 186 C 223 210 222 228 224 247 L 222 274 C 224 296 235 320 237 341 C 239 370 236 408 231 434 L 175 434 L 166 393 Q 160 383 154 393 L 145 434 L 89 434 C 84 408 81 370 83 341 C 85 320 96 296 98 274 L 96 247 C 98 228 97 210 93 186 L 90 217 L 83 249 C 81 267 72 292 59 314 L 60 335 L 55 356 Q 52 361 50 356 L 50 343 L 44 360 Q 40 364 39 359 L 42 341 L 34 358 Q 30 360 30 355 L 35 337 L 25 351 Q 21 351 22 346 L 30 330 L 20 337 Q 16 336 19 331 L 31 320 L 40 303 L 49 265 Q 52 245 59 228 L 65 190 C 69 166 72 139 88 126 C 107 113 128 116 140 105 C 144 101 147 90 139 84 C 129 77 123 65 123 49 C 123 28 137 12 158 12 Z"
     static let bodyPath = parse(bodyData)
     // SwiftUI Path.contains drops the y=217 scanline on this concave silhouette (iOS 26.5).
     // CoreGraphics uses the rendered path's winding rule correctly, including that scanline.

@@ -11,7 +11,7 @@ struct ContentView: View {
             OnboardingView(prefs: prefs)
         } else {
             TabView(selection: $selectedTab) {
-                LiveSessionView(viewModel: liveVM, selectedTab: $selectedTab)
+                LiveSessionView(viewModel: liveVM, prefs: prefs, selectedTab: $selectedTab)
                     .tabItem { Label("消化预演", systemImage: "fork.knife") }
                     .tag(0)
 
@@ -22,7 +22,7 @@ struct ContentView: View {
                 .tag(1)
 
                 NavigationStack {
-                    MeView(prefs: prefs)
+                    MeView(prefs: prefs, library: liveVM.library)
                 }
                 .tabItem { Label("我", systemImage: "person.crop.circle") }
                 .tag(2)

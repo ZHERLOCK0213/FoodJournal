@@ -1,0 +1,113 @@
+import Foundation
+
+/// v5 additions. Unresolved recipes stay discoverable but cannot generate numeric previews.
+/// A reference entry is not a measurement of a particular restaurant or brand.
+enum FoodDatabaseExpansion {
+    private static let cfsURL = URL(string: "https://www.cfs.gov.hk/tc_chi/nutrient/presearch3.php")!
+    private static let cfc = "香港食安中心 / 中国疾控 CFC2002Ed2"
+    private static let frl = "香港食安中心 · 食物研究化验所 FRL"
+
+    static let foods: [Food] = [
+        pending("肉末茄子盖饭", id: "minced-pork-eggplant-rice",
+                reason: "肉末、米饭、茄子和用油比例尚未核定。已找到的鱼香茄子饭含咸鱼，不能直接替代这道菜。"),
+        entry("水饺", id: "pork-vegetable-dumplings", tags: [.carb, .fat, .protein],
+              preparation: "菜肉水饺；按熟食可食部分计重，不含额外蘸料。其他馅料需另行核对。",
+              carb: 14, protein: 5.8, fat: 9.2, kcal: 160, fiber: 1.4,
+              record: "10400200625", source: frl, fiberBasis: "总膳食纤维"),
+        entry("蛋炒饭", id: "egg-fried-rice", tags: [.carb, .fat, .protein],
+              preparation: "熟制外卖蛋炒饭参考；不包含额外肉类浇头，不是扬州炒饭。",
+              carb: 33.3, protein: 4.3, fat: 4.9, kcal: 186, fiber: 1.1,
+              record: "11-444", source: "英国公共卫生部门 · CoFID 2021",
+              fiberBasis: "AOAC膳食纤维", kind: .reference,
+              reference: "英国10个外卖样本的蛋炒饭参考，不代表某一家餐厅；用油和蛋饭比例会影响数值。乳糖Tr为微量。",
+              sourceURL: FoodCompositionSource.cofid.url),
+        pending("牛肉粿条", id: "beef-kway-teow",
+                reason: "已确认为汤牛肉粿条；待核对应成分记录，以及汤、粿条和牛肉的计重口径，不使用炒粿条数据替代。"),
+        pending("鸡公煲", id: "chicken-hot-pot",
+                reason: "鸡肉部位、骨重、配菜、酱料及是否包含米饭尚未确定；暂无匹配的整菜成分资料。"),
+        entry("汉堡", id: "beef-burger-reference", tags: [.carb, .fat, .protein],
+              preparation: "参考白面包、牛肉饼和沙拉组成的汉堡；按完整可食汉堡计重。",
+              carb: 18, protein: 12.1, fat: 9.1, kcal: 202, fiber: 2.6,
+              record: "074003F004362", source: "香港食安中心 / 澳洲新西兰食品标准管理局",
+              fiberBasis: "总膳食纤维；碳水为可利用口径", kind: .reference,
+              reference: "原始记录为澳新独立外卖店的牛肉汉堡，不是中国大陆某品牌汉堡的标签值；鸡肉、芝士或双层汉堡不适用。"),
+        entry("薯条", id: "french-fries", tags: [.carb, .fat],
+              preparation: "炸薯条样本；不含额外番茄酱等蘸料，不代表某个连锁品牌。",
+              carb: 31, protein: 3.9, fat: 14, kcal: 270, fiber: 3.5,
+              record: "10260000797", source: frl, fiberBasis: "总膳食纤维"),
+        pending("原味鸡", id: "original-fried-chicken",
+                reason: "已确认为肯德基吮指原味鸡；待核中国大陆品牌营养资料、具体部位及可食计重口径，不以通用炸鸡腿数据替代。"),
+        entry("炒米粉（细）", id: "fried-fine-rice-vermicelli", tags: [.carb, .fat],
+              preparation: "以官方炒米粉条目作参考，按熟食计重；配料及用油随做法变化。",
+              carb: 26, protein: 3.7, fat: 4.7, kcal: 160, fiber: 1.3,
+              record: "10400100026", source: frl, fiberBasis: "总膳食纤维", kind: .reference,
+              reference: "官方条目为炒米粉（Fried vermicelli），未单独标示粉径；不代表所有细米粉配方，也不能替代新疆炒米粉。"),
+        pending("新疆炒米粉", id: "xinjiang-fried-rice-noodles",
+                reason: "粗米粉、肉类、酱料与用油比例尚未核定；食品抽检合格清单不提供可用于计算的营养成分。"),
+        entry("豆浆", id: "soy-milk-reference", tags: [.protein],
+              preparation: "豆浆参考条目；按克计重，不把克直接当作毫升。记录未注明是否加糖。",
+              carb: 1.1, protein: 1.8, fat: 0.7, kcal: 16, fiber: 1.1,
+              record: "0516000314010", source: cfc, fiberBasis: "不溶性纤维", kind: .reference,
+              reference: "不标注为无糖豆浆，也不适用于特定品牌的浓豆浆或加糖产品。"),
+        entry("油条", id: "fried-dough-stick", tags: [.carb, .fat],
+              preparation: "油炸小麦面团；按可食部分计重。用油、含水量随制作而变化。",
+              carb: 51, protein: 6.9, fat: 17.6, kcal: 388, fiber: 0.9,
+              record: "0501070114090", source: cfc, fiberBasis: "不溶性纤维"),
+        entry("小米粥", id: "millet-porridge", tags: [.carb],
+              preparation: "煮成的小米粥，包含水分；粥的稠度会影响每100g成分。原始纤维结果为ND（未检出），不是测得零。",
+              carb: 8.4, protein: 1.4, fat: 0.7, kcal: 46, fiber: nil,
+              record: "0501000151030", source: cfc, fiberBasis: "不溶性纤维；ND（未检出）"),
+        entry("全麦面包", id: "wholemeal-bread", tags: [.carb, .protein],
+              preparation: "全麦面粉制面包；不是烤面包片，不含额外涂抹物。",
+              carb: 39.2, protein: 10.4, fat: 2.5, kcal: 221, fiber: 6.9,
+              record: "070107F001553", source: "香港食安中心 / 澳洲新西兰食品标准管理局",
+              fiberBasis: "总膳食纤维；碳水为可利用口径", kind: .reference,
+              reference: "澳新全麦面包资料条目；不是任意品牌或配方的营养标签值。"),
+        entry("炒花生", id: "roasted-peanuts", tags: [.fat, .protein],
+              preparation: "炒花生参考条目；按去壳后的可食花生仁计重，不含额外油盐或糖衣。",
+              carb: 23.8, protein: 21.7, fat: 48, kcal: 601, fiber: 6.3,
+              record: "0505000720030", source: cfc, fiberBasis: "不溶性纤维"),
+        entry("小笼包（猪肉）", id: "shanghai-pork-xiaolongbao", tags: [.carb, .fat, .protein],
+              preparation: "上海式蒸猪肉小笼包；不含额外蘸料。不适用于蟹粉或素馅。",
+              carb: 16, protein: 9, fat: 14, kcal: 230, fiber: 1,
+              record: "10400200075", source: frl, fiberBasis: "总膳食纤维"),
+        entry("烧卖（虾肉）", id: "shrimp-siu-mai", tags: [.protein, .fat, .carb],
+              preparation: "广东式蒸虾肉烧卖；不是糯米烧麦，不含额外蘸料。",
+              carb: 10, protein: 11, fat: 13, kcal: 200, fiber: 1.2,
+              record: "10400200002", source: frl, fiberBasis: "总膳食纤维"),
+        entry("豆腐脑（带卤）", id: "tofu-pudding-savory", tags: [.protein, .carb],
+              preparation: "带卤/酱料的嫩豆腐脑；不适用于甜豆花或无卤豆腐。",
+              carb: 5.4, protein: 2.6, fat: 1.8, kcal: 48, fiber: 0.2,
+              record: "0540041410060", source: cfc, fiberBasis: "不溶性纤维"),
+        entry("酸奶（原味参考）", id: "yogurt-mean-reference", tags: [.carb, .protein, .fat],
+              preparation: "原味全脂酸奶参考；不含额外糖、果粒或谷物。保留原目录ID。",
+              carb: 7.8, protein: 5.7, fat: 3, kcal: 79, fiber: 0,
+              record: "12-184", source: "英国公共卫生部门 · CoFID 2021",
+              fiberBasis: "AOAC膳食纤维", kind: .reference,
+              reference: "原味全脂酸奶样本参考，不适用于希腊式、加糖、加料或无乳糖酸奶。包装产品优先核对自身标签。",
+              sourceURL: FoodCompositionSource.cofid.url),
+        entry("橙子", id: "orange-edible", tags: [.carb],
+              preparation: "橙的可食部分；重量不含外皮，不是橙汁。",
+              carb: 11.1, protein: 0.8, fat: 0.2, kcal: 48, fiber: 0.6,
+              record: "0504000641010", source: cfc, fiberBasis: "不溶性纤维")
+    ]
+
+    private static func entry(_ name: String, id: String, tags: [NutrientType], preparation: String,
+                              carb: Double, protein: Double, fat: Double, kcal: Double, fiber: Double?,
+                              record: String, source: String, fiberBasis: String,
+                              kind: FoodMetadata.Kind = .direct, reference: String? = nil,
+                              sourceURL: URL? = nil) -> Food {
+        Food(name: name, nutrients: tags, description: preparation,
+             carbPer100g: carb, fatPer100g: fat, proteinPer100g: protein, caloriesPer100g: kcal,
+             sourceName: source, sourceURL: sourceURL ?? cfsURL, catalogID: id,
+             metadata: FoodMetadata(kind: kind, recordID: record, preparation: preparation,
+                                    referenceDescription: reference, fiberBasis: fiberBasis,
+                                    fiberPer100g: fiber),
+             compositionReference: FoodCompositionDatabase.entries[id])
+    }
+
+    private static func pending(_ name: String, id: String, reason: String) -> Food {
+        Food(name: name, nutrients: [], description: reason, catalogID: id,
+             metadata: FoodMetadata(kind: .pending, preparation: reason))
+    }
+}

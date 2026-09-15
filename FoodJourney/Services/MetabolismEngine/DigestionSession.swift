@@ -111,7 +111,26 @@ final class DigestionSession {
 
     // MARK: 累积总量
 
-    var foodCount: Int { results.count }
+    var foodCount: Int { items.count }
+    static let maximumDistinctFoods = 10
+    var distinctFoodCount: Int { Set(items.map(\.food.catalogID)).count }
+
+    func canAddEducation(_ food: Food) -> Bool {
+        food.canPreview && (items.contains { $0.food.catalogID == food.catalogID } || distinctFoodCount < Self.maximumDistinctFoods)
+    }
+
+    /// Current educational UI records inputs without running legacy physiological estimates.
+    @discardableResult
+    func recordEducation(_ item: FoodItem) -> Bool {
+        guard canAddEducation(item.food), item.grams.isFinite, item.grams > 0 else { return false }
+        items.append(item)
+        return true
+    }
+
+    func removeEducation(at index: Int) {
+        guard items.indices.contains(index) else { return }
+        items.remove(at: index)
+    }
 
     /// 本次进食某脏器使用度（0~1）：已消耗能力 / 初始能力。大肠无能力值返回 0。
     func usageRatio(_ organ: DigestiveOrgan) -> Double {

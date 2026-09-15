@@ -1,8 +1,10 @@
 import SwiftUI
 
-/// Automatically presented once each run finishes. Individual results remain available afterward.
+/// Opened explicitly after a run. Individual results also remain on the canvas.
 struct MealJourneySummaryView: View {
     let journey: MealDigestionJourney
+    // The caller must explicitly choose an organ or the complete journey.
+    let selectedPart: AnatomyPart?
     let focus: (AnatomyPart) -> Void
     let close: () -> Void
 
@@ -13,11 +15,13 @@ struct MealJourneySummaryView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Text(journey.title).font(.title3.weight(.semibold))
                             .accessibilityIdentifier("journey-meal-title")
-                        Text(journey.composition).font(.caption).foregroundStyle(.secondary)
-                        Text("按内置食物成分演示典型过程，不是个人代谢测量。动画压缩了时间，各器官在现实中会协同工作。成分数据仍待统一校核。")
+                        if selectedPart == nil {
+                            Text(journey.composition).font(.caption).foregroundStyle(.secondary)
+                        }
+                        Text("典型生理过程示意，非个人代谢测量。动画时间经过压缩。")
                             .font(.caption).foregroundStyle(.secondary)
                     }.padding(.bottom, 4)
-                    ForEach(journey.outcomes) { outcome in
+                    ForEach(journey.outcomes.filter { selectedPart == nil || $0.part == selectedPart }) { outcome in
                         VStack(alignment: .leading, spacing: 9) {
                             HStack {
                                 Circle().fill(AnatomyArtwork.asset(outcome.part).color).frame(width: 8, height: 8)
@@ -34,6 +38,10 @@ struct MealJourneySummaryView: View {
                                 .foregroundStyle(AnatomyArtwork.asset(outcome.part).color)
                             Link("资料参考 · NIDDK ↗", destination: outcome.part.source)
                                 .font(.caption2).foregroundStyle(.secondary)
+                            if outcome.part == .pancreas {
+                                Link("胰岛素说明 · NIDDK ↗", destination: PancreasRole.insulinSource)
+                                    .font(.caption2).foregroundStyle(.secondary)
+                            }
                         }
                         .font(.subheadline).lineSpacing(3)
                         .padding(14)
@@ -46,7 +54,7 @@ struct MealJourneySummaryView: View {
             }
             .accessibilityIdentifier("journey-summary-list")
             .background(AnatomyArtwork.color("0D1020"))
-            .navigationTitle("本份消化小结")
+            .navigationTitle(selectedPart.map { "\($0.label) · 本份小结" } ?? "本份完整旅程")
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(AnatomyArtwork.color("0D1020"), for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)

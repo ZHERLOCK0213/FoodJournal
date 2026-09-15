@@ -10,14 +10,14 @@ struct EatenItemsSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 10) {
-                    if viewModel.session.results.isEmpty {
+                    if viewModel.session.items.isEmpty {
                         Text("尚未吃入食物")
                             .font(.system(size: 13))
                             .foregroundColor(AppTheme.textSecondary(scheme: colorScheme))
                             .frame(maxWidth: .infinity).padding(.vertical, 40)
                     } else {
-                        ForEach(Array(viewModel.session.results.enumerated()), id: \.element.id) { idx, r in
-                            row(idx: idx, result: r)
+                        ForEach(Array(viewModel.session.items.enumerated()), id: \.element.id) { idx, item in
+                            row(idx: idx, item: item)
                         }
                     }
                 }
@@ -35,8 +35,9 @@ struct EatenItemsSheet: View {
         }
     }
 
-    private func row(idx: Int, result: FoodDigestionResult) -> some View {
-        HStack(spacing: 10) {
+    private func row(idx: Int, item: FoodItem) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+          HStack(spacing: 10) {
             Text("\(idx + 1)")
                 .font(.system(size: 12, weight: .bold, design: .monospaced))
                 .foregroundColor(AppTheme.primaryLight)
@@ -45,8 +46,9 @@ struct EatenItemsSheet: View {
                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(result.foodName).font(.system(size: 14, weight: .semibold)).foregroundColor(.white)
-                Text("\(Int(result.grams))g · \(Int(result.calories)) kcal")
+                Text(item.food.name).font(.system(size: 14, weight: .semibold)).foregroundColor(.white)
+                    .accessibilityIdentifier("eaten-item-\(item.food.catalogID)")
+                Text("\(Int(item.grams))g · \(Int(item.calories)) kcal · \(item.food.portionSourceLabel)")
                     .font(.system(size: 11)).foregroundColor(AppTheme.textSecondary(scheme: colorScheme))
             }
             Spacer()
@@ -60,9 +62,16 @@ struct EatenItemsSheet: View {
                     .frame(width: 30, height: 30)
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("remove-eaten-\(item.food.catalogID)")
+          }
+          if !item.food.displayPreparation.isEmpty {
+              Text(item.food.displayPreparation)
+                  .font(.system(size: 10)).foregroundStyle(.secondary)
+          }
         }
         .padding(.horizontal, 14).padding(.vertical, 10)
         .background(Color(hex: "111128")!)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
+
 }

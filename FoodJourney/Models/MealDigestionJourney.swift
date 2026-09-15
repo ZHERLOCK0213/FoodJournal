@@ -29,10 +29,10 @@ struct MealDigestionJourney: Identifiable {
         case .stomach: return "本份蛋白 \(grams(item.proteinGrams))"
         case .duodenum, .gallbladder: return "本份脂肪 \(grams(item.fatGrams))"
         case .smallIntestine: return "碳水 \(grams(item.carbGrams))\n蛋白 \(grams(item.proteinGrams))"
-        case .largeIntestine: return "本份纤维 \(grams(item.fiberGrams))"
-        case .pancreas: return "分泌量未估算"
-        case .liver: return "产物量未估算"
-        case .kidneys: return "排出量未估算"
+        case .largeIntestine: return item.knownFiberGrams.map { "本份纤维 \(grams($0))" } ?? "纤维未提供"
+        case .pancreas: return "消化酶 · 胰岛素"
+        case .liver: return "营养处理与储存"
+        case .kidneys: return "血液过滤与排泄"
         }
     }
 
@@ -41,7 +41,8 @@ struct MealDigestionJourney: Identifiable {
         let protein = item.proteinGrams > 0
         let carb = item.carbGrams > 0
         let fat = item.fatGrams > 0
-        let fiber = item.fiberGrams > 0
+        let fiber = (item.knownFiberGrams ?? 0) > 0
+        let fiberUnknown = item.knownFiberGrams == nil
         let nutrients = [(protein, "蛋白质"), (carb, "碳水化合物"), (fat, "脂肪")]
             .filter { $0.0 }.map { $0.1 }.joined(separator: "、")
         let products = [(protein, "氨基酸"), (carb, "单糖"), (fat, "脂肪酸等")]
@@ -61,8 +62,10 @@ struct MealDigestionJourney: Identifiable {
         add(.duodenum, "消化道", fat ? "食糜在这里与胰液、胆汁等混合。" : "食糜在这里与胰液、肠液等混合。",
             nutrients.isEmpty ? "继续混合并向后续小肠移动。" : "\(nutrients)继续被消化，随后进入后续小肠。", "消化液混合")
         if !nutrients.isEmpty {
-            add(.pancreas, "消化液协作", "将含消化酶的胰液送到小肠，参与\(nutrients)的分解。",
-                "为进一步消化提供酶；食团不进入胰腺。", "提供消化酶")
+            add(.pancreas, "消化液与激素协作", "将含消化酶的胰液送到小肠，参与\(nutrients)的分解；胰岛素等激素则通过血液参与调节。",
+                carb ? "胰液帮助消化，胰岛素参与餐后血糖调节。食团不进入胰腺，分泌量未估算。"
+                     : "胰液帮助消化。碳水为零不表示胰岛素分泌为零；这里只介绍一般作用，分泌量未估算。",
+                "消化与血糖调节")
         }
         if fat {
             add(.gallbladder, "消化液协作", "释放储存的胆汁到小肠，帮助这份食物中的脂肪消化。",
@@ -76,7 +79,7 @@ struct MealDigestionJourney: Identifiable {
         }
         add(.kidneys, "代谢延伸 · 持续发生", "营养被身体利用后，代谢废物随血液运输；肾脏持续过滤血液并回收需要的物质。",
             "部分代谢废物和多余水分成为尿液。这里不是食团通道，也不能由这份食物推算个人排出量。", "废物与水→尿液")
-        add(.largeIntestine, "消化道", fiber ? "吸收剩余内容物中的水分，菌群可分解部分膳食纤维。" : "吸收剩余内容物中的水分；即使这份食物不含纤维，大肠仍有作用。",
+        add(.largeIntestine, "消化道", fiberUnknown ? "吸收剩余内容物中的水分，参与粪便形成。" : (fiber ? "吸收剩余内容物中的水分，菌群可分解部分膳食纤维。" : "吸收剩余内容物中的水分，参与粪便形成。"),
             fiber ? "部分纤维经菌群分解，未消化残余等参与形成粪便；并非整份食物都变成粪便。" : "未消化残余、脱落细胞等参与形成粪便；并非整份食物都变成粪便。", "回收水分·形成粪便")
         outcomes = results
     }

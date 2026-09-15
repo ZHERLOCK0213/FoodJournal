@@ -2,14 +2,36 @@ import SwiftUI
 
 struct AnatomyExplorerView: View {
     let viewModel: LiveSessionViewModel
+    let prefs: UserPreferences
     @State private var selected: AnatomyPart?
-    @State private var showJourneySummary = false
+    // Carry the scope and journey together, instead of opening a Boolean sheet
+    // whose content may capture an earlier (nil/all-organs) selection.
+    private struct JourneySummaryPresentation: Identifiable {
+        let id = UUID()
+        let journey: MealDigestionJourney
+        let part: AnatomyPart?
+    }
+    @State private var summaryPresentation: JourneySummaryPresentation?
+    @State private var showPancreasProcess = false
+    @State private var showUrateEducation = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private func select(_ part: AnatomyPart?) {
         withAnimation(reduceMotion ? nil : .easeInOut(duration: 0.25)) {
             selected = selected == part ? nil : part
         }
+    }
+
+    private func dismissMealSheets() {
+        summaryPresentation = nil
+        showPancreasProcess = false
+        showUrateEducation = false
+    }
+
+    /// The live hint is deliberately built from the captured journey item, not the current picker.
+    private var urateEducation: UrateEducation? {
+        let meal = MealEducationSummary(items: viewModel.journey.map { [$0.item] } ?? [])
+        return UrateEducation(focus: prefs.focus, meal: meal)
     }
 
     var body: some View {
@@ -52,20 +74,51 @@ struct AnatomyExplorerView: View {
         .foregroundStyle(Color.white.opacity(0.93))
         .background(AnatomyArtwork.color("0D1020"))
         .onChange(of: viewModel.session.foodCount) { _, count in
-            if count == 0 { selected = nil }
+            if count == 0 {
+                selected = nil
+                dismissMealSheets()
+            }
+        }
+        .onChange(of: prefs.focus) { _, focus in
+            if focus != .uricAcid { showUrateEducation = false }
         }
         .onChange(of: viewModel.completedJourneyID) { _, id in
             // Completion reveals the on-canvas results; do not cover them with a modal sheet.
-            if id == nil { showJourneySummary = false }
+            if id == nil { dismissMealSheets() }
         }
-        .sheet(isPresented: $showJourneySummary) {
-            if let journey = viewModel.journey {
-                MealJourneySummaryView(journey: journey) { part in
-                    selected = part
-                    showJourneySummary = false
-                } close: {
-                    showJourneySummary = false
+        .sheet(item: $summaryPresentation) { presentation in
+            MealJourneySummaryView(journey: presentation.journey, selectedPart: presentation.part) { part in
+                selected = part
+                summaryPresentation = nil
+            } close: {
+                summaryPresentation = nil
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showPancreasProcess) {
+            PancreasProcessView(
+                meal: MealEducationSummary(items: viewModel.journey.map { [$0.item] } ?? []),
+                scope: viewModel.journey.map { "本份 · \($0.title)" } ?? "一般生理机制")
+        }
+        .sheet(isPresented: $showUrateEducation) {
+            if let education = urateEducation, let journey = viewModel.journey {
+                NavigationStack {
+                    ScrollView {
+                        UrateEducationView(education: education, scope: "本份 · \(journey.title)")
+                            .padding(16)
+                    }
+                    .background(AnatomyArtwork.color("0D1020"))
+                    .navigationTitle("尿酸科普")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("关闭") { showUrateEducation = false }
+                                .accessibilityIdentifier("close-urate-education")
+                        }
+                    }
                 }
+                .preferredColorScheme(.dark)
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
             }
@@ -87,7 +140,8 @@ struct AnatomyExplorerView: View {
                     bodyLayer(layout.transform)
                     ForEach(AnatomyArtwork.assets) { asset in
                         organLayer(asset, transform: layout.transform)
-                            .opacity(selected == nil || selected == asset.part ? 1 : (viewModel.phase == .idle ? 0.13 : 0.32))
+                            .opacity(selected == nil || selected == asset.part ? 1
+                                     : (viewModel.phase == .idle ? 0.13 : 0.32))
                     }
                     if let selected {
                         organLayer(AnatomyArtwork.asset(selected), transform: layout.transform)
@@ -131,6 +185,7 @@ struct AnatomyExplorerView: View {
     private func callout(_ part: AnatomyPart) -> some View {
         let completed = viewModel.completedJourneyID != nil
         let outcome = completed ? viewModel.journey?.outcome(for: part) : nil
+        let urate = part == .kidneys ? urateEducation : nil
         let color = AnatomyArtwork.asset(part).color
         return Button { select(part) } label: {
             VStack(alignment: .leading, spacing: 3) {
@@ -139,13 +194,23 @@ struct AnatomyExplorerView: View {
                     Text(part.label).font(.system(size: 12, weight: .semibold))
                     Spacer(minLength: 0)
                 }
-                if completed, let journey = viewModel.journey {
+                if let urate {
+                    Text(urate.title)
+                        .font(.system(size: 10, weight: .medium)).lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .foregroundStyle(.white.opacity(0.92))
+                    Text("点按查看重点说明")
+                        .font(.system(size: 10)).foregroundStyle(color).lineLimit(1)
+                } else if completed, let journey = viewModel.journey {
                     Text(journey.calloutData(for: part))
                         .font(.system(size: 10, weight: .medium)).lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
                         .foregroundStyle(.white.opacity(0.9))
-                    Text(outcome?.badge ?? "本份无专项讲解")
+                    Text(outcome?.badge ?? "一般功能")
                         .font(.system(size: 10)).foregroundStyle(color).lineLimit(part == .smallIntestine ? 1 : 2)
+                } else if selected == nil, part == .pancreas, let role = viewModel.pancreasRoleDuringPreview {
+                    Text(role.title).font(.system(size: 10, weight: .medium))
+                    Text(role.subtitle).font(.system(size: 10)).foregroundStyle(color).lineLimit(2)
                 } else {
                     Text(viewModel.phase == .idle ? "点击查看功能" : "正在预演…")
                         .font(.system(size: 10)).foregroundStyle(.secondary)
@@ -159,7 +224,8 @@ struct AnatomyExplorerView: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier("organ-callout-\(part.rawValue)")
-        .accessibilityValue(completed ? viewModel.journey?.calloutData(for: part) ?? "" : "等待预演")
+        .accessibilityValue(urate.map { "\($0.title)。\($0.kidneyExplanation)" }
+            ?? (completed ? viewModel.journey?.calloutData(for: part) ?? "" : "等待预演"))
         .accessibilityAddTraits(selected == part ? .isSelected : [])
         .transaction { $0.animation = nil }
     }
@@ -202,6 +268,22 @@ struct AnatomyExplorerView: View {
     }
 
     private func drawActivity(_ context: GraphicsContext, date: Date) {
+        // Manual organ focus takes priority over automatic pancreas lesson accents.
+        // Otherwise the two narrative windows repeatedly brighten/change its outline.
+        if selected == nil, let role = viewModel.pancreasRoleDuringPreview {
+            let color = AnatomyArtwork.asset(role == .digestion ? .pancreas : .smallIntestine).color
+            context.stroke(AnatomyArtwork.asset(.pancreas).path, with: .color(color), lineWidth: 1.8)
+            if role == .digestion {
+                // Short schematic secretion route. These markers are not food or secretion units.
+                var route = Path()
+                route.move(to: CGPoint(x: 170, y: 235))
+                route.addLine(to: CGPoint(x: 137, y: 236))
+                context.stroke(route, with: .color(color), style: StrokeStyle(lineWidth: 1.6, dash: [3, 2]))
+                let t = reduceMotion ? 0.5 : date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 0.8) / 0.8
+                let point = CGPoint(x: 170 - 33 * t, y: 235 + t)
+                context.fill(Path(ellipseIn: CGRect(x: point.x - 2, y: point.y - 2, width: 4, height: 4)), with: .color(.white))
+            }
+        }
         if let selected {
             let asset = AnatomyArtwork.asset(selected)
             let bounds = asset.path.boundingRect
@@ -234,6 +316,16 @@ struct AnatomyExplorerView: View {
                     Circle().fill(AnatomyArtwork.asset(selected).color).frame(width: 8, height: 8)
                     Text(selected.label).font(.system(size: 16, weight: .semibold))
                     Spacer()
+                    if selected == .pancreas {
+                        Button("作用讲解 ↗") { showPancreasProcess = true }
+                            .font(.system(size: 12)).frame(minHeight: 32)
+                            .accessibilityIdentifier("open-pancreas-process")
+                    }
+                    if selected == .kidneys, urateEducation != nil {
+                        Button("尿酸重点 ↗") { showUrateEducation = true }
+                            .font(.system(size: 12)).frame(minHeight: 32)
+                            .accessibilityIdentifier("open-urate-education")
+                    }
                     Button("查看全貌") { select(nil) }
                         .font(.system(size: 12)).frame(minHeight: 32)
                         .accessibilityIdentifier("clear-organ-focus")
@@ -241,8 +333,10 @@ struct AnatomyExplorerView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 8) {
                         if let journey = viewModel.journey, viewModel.completedJourneyID != nil {
-                            Button { showJourneySummary = true } label: {
-                                Text("\(journey.title) · 查看本份全部小结 ↗")
+                            Button {
+                                summaryPresentation = JourneySummaryPresentation(journey: journey, part: selected)
+                            } label: {
+                                Text("\(journey.title) · 查看\(selected.label)小结 ↗")
                             }.font(.system(size: 11)).accessibilityIdentifier("open-journey-summary")
                         }
                         let outcome = viewModel.completedJourneyID == nil ? nil : viewModel.journey?.outcome(for: selected)
@@ -250,11 +344,20 @@ struct AnatomyExplorerView: View {
                         Text("结果  \(outcome?.result ?? selected.explanation.result)")
                             .foregroundStyle(AnatomyArtwork.asset(selected).color)
                         if viewModel.completedJourneyID != nil && outcome == nil {
-                            Text("本份成分未触发此器官的专项讲解；以上为一般功能，不表示器官停止工作。")
+                            Text("一般生理功能。")
                                 .font(.system(size: 10)).foregroundStyle(.secondary)
+                        }
+                        if selected == .kidneys, let education = urateEducation {
+                            Text(education.context)
+                                .font(.system(size: 11)).foregroundStyle(AnatomyArtwork.asset(.kidneys).color)
+                                .accessibilityIdentifier("urate-kidney-hint")
                         }
                         Link("科普示意 · 来源 NIDDK ↗", destination: selected.source)
                             .font(.system(size: 10)).foregroundStyle(.secondary)
+                        if selected == .pancreas {
+                            Link("胰岛素说明 · NIDDK ↗", destination: PancreasRole.insulinSource)
+                                .font(.system(size: 10)).foregroundStyle(.secondary)
+                        }
                     }.frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .font(.system(size: 12)).lineSpacing(3)
@@ -267,7 +370,9 @@ struct AnatomyExplorerView: View {
                         .font(.system(size: 12)).frame(minHeight: 32)
                         .accessibilityIdentifier("replay-journey")
                 }
-                Button { showJourneySummary = true } label: {
+                Button {
+                    summaryPresentation = JourneySummaryPresentation(journey: journey, part: nil)
+                } label: {
                     HStack {
                         Text("查看 \(journey.outcomes.count) 个器官的过程与结果")
                         Spacer()
@@ -282,7 +387,7 @@ struct AnatomyExplorerView: View {
                     Text("轻点器官，看它如何参与消化与代谢")
                         .font(.system(size: 13, weight: .medium))
                 }
-                Text("左右气泡对应器官。进食后显示本份成分与去向；点击气泡可聚焦，成分量不等于代谢产物量。")
+                Text("点选气泡查看过程；数值为食物成分。")
                     .font(.system(size: 12)).foregroundStyle(.secondary).lineSpacing(3)
                 Text(viewModel.phase == .idle ? "消化与代谢示意 · NIDDK 资料参考" : "正在预演食物旅程 · 可随时聚焦器官")
                     .font(.system(size: 10)).foregroundStyle(.secondary)
