@@ -1,6 +1,6 @@
 # FoodJourney 独立器官素材 v1
 
-2026-09-07。成年人体比例、朝右张口，器官采用圆润简化形状。不是儿童角色。
+2026-09-07 的历史设计版本。成年人体比例、朝右张口，器官采用圆润简化形状。不是儿童角色。本目录资产与截图保留该阶段设计，不代表当前应用界面；最新状态见 [项目状态](../../../docs/project-status.md)。
 
 打开 `index.html` 查看全部素材；`assembled.png` / `assembled.svg` 是拼接预览。
 
@@ -12,18 +12,19 @@
 
 ## 来源与编辑
 
-原创矢量源：`FoodJourney/Models/AnatomyArtwork.swift`。App 使用同一组矢量路径实时渲染，PNG/SVG 是可交付导出，避免位图位置与动画不一致。SVG 基础填色、PNG 渐变预览与 App 的阴影高光可能略有不同，几何形状保持一致。
+矢量源：`FoodJourney/Models/AnatomyArtwork.swift`。该阶段 App 与导出使用同一组矢量路径。SVG 基础填色、PNG 渐变预览与 App 的阴影高光可能略有不同。源代码后续已有演进，本目录保存的历史资产不保证与最新源码相同。
 
-修改矢量源后重新导出：
+在安装 Xcode 命令行工具的 macOS 上，从仓库根目录导出当前源码到独立目录：
 
 ```sh
-swiftc FoodJourney/Models/AnatomyArtwork.swift scripts/export-anatomy.swift -o /private/tmp/foodjourney-export-anatomy
-/private/tmp/foodjourney-export-anatomy "$PWD/Design/Anatomy/v1"
+mkdir -p build
+swiftc FoodJourney/Models/AnatomyArtwork.swift scripts/export-anatomy.swift -o build/export-anatomy
+build/export-anatomy "$PWD/Design/Anatomy/generated"
 ```
 
-本版本命名可重复导出；需要保留历史时使用新的版本目录。
+该命令导出当前源码，不重建 v1 历史快照；输出目录使用独立名称以保留版本资产。
 
-## 点击聚焦
+## 该阶段点击聚焦设计
 
 - 直接触摸器官实际形状，或使用横向器官按钮选择。
 - 选中器官保持 100% 图层不透明度，其余器官与消化道降为 13%。
@@ -32,13 +33,13 @@ swiftc FoodJourney/Models/AnatomyArtwork.swift scripts/export-anatomy.swift -o /
 - 选择器官不清空当前餐食，不重启进食动画。
 - “减弱动态效果”关闭聚焦过渡与循环活动点。
 
-说明卡提供通用生理过程与结果，未把未校准的个体排泄量作为事实展示。原餐食会话及报告计算仍沿用原逻辑。新版画布用聚焦说明卡替代旧的累积泡泡与残留标签；本轮未校准旧报告计算。
+说明卡提供通用生理过程与结果，未把未校准的个体排泄量作为事实展示。该阶段餐食会话及报告计算仍沿用旧逻辑，画布先以聚焦说明卡替代累积泡泡与残留标签；当时未校准旧报告计算。后续变化见 [开发历史](../../../docs/development-history.md)。
 
 ## 验证记录
 
-2026-09-07，iPhone 16 / iOS 26.5：8 项单元测试通过；米饭预演至报告 UI 测试通过；器官聚焦测试经修正屏幕外按钮的滚动操作后通过。覆盖胃→肾切换、直接点击小肠和肝脏、再次点击退出、空白退出、“查看全貌”退出。最终说明卡关闭文字过渡后构建通过，并重新启动截图检查。
+历史记录（2026-09-07，iPhone 16 / iOS 26.5 模拟器）：8 项单元测试通过；米饭预演至报告 UI 测试通过；器官聚焦测试经修正屏幕外按钮的滚动操作后通过。覆盖胃→肾切换、直接点击小肠和肝脏、再次点击退出、空白退出、“查看全貌”退出。说明卡关闭文字过渡后构建通过，并进行了截图检查。这些结果仅适用于当时版本，本次文档整理未重新执行测试。
 
-截图位于 `previews/`：`assembled-app.png`、`stomach-focus.png`、`kidneys-focus.png`。尚未覆盖其他屏幕尺寸的视觉验收。
+历史截图位于 `previews/`：`assembled-app.png`、`stomach-focus.png`、`kidneys-focus.png`。该记录未覆盖其他屏幕尺寸的视觉验收，不是当前版本截图。
 
 ## 科普资料
 

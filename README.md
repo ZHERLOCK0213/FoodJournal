@@ -1,126 +1,112 @@
 # 食物旅行 · FoodJourney
 
-一款使用 SwiftUI 构建的 iOS 互动科普 App：选择食物与份量，观察食物沿消化道移动，并了解不同器官在消化、吸收与代谢中的作用。
+FoodJourney 是一款使用 SwiftUI 构建的 iOS 互动科普应用。选择食物与份量，观察消化过程示意，并了解不同器官在消化、吸收与代谢中的作用。
 
-**当前工作区（2026-09-15）**：[v10整餐关注分析](docs/meal-focus-v10.md)。报告汇总本餐全部份量并展示主要贡献来源与追加提示；饮水为独立可选背景，不推算血尿酸，也不强造四档单餐风险。保留[v9私人食物与产品收敛](docs/personal-foods-v9.md)：公共库只读，自建食物本机增改删，最近3种加完整目录，无疾病问卷。存储接口已分离，尚无账号或云同步。支持基线为iOS26.5；下文v4～v7测试数仅为历史记录，本轮未运行自动化测试。
+项目面向对消化过程好奇的普通成年人，也考虑有慢性病史读者的理解需求。首发计划面向中国大陆，目前仍在开发中，尚未发布到 TestFlight 或 App Store。
 
-> 开发中的教育演示项目，尚非正式发布版本。仓库名为 **FoodJournal**，Xcode 工程与 App 内部名称为 **FoodJourney**。
->
-> 本项目不是医疗工具，不提供个人血糖预测、器官功能评估、诊断或治疗建议。v4 已将报告改为食物成分汇总与器官参与说明，不展示旧模型的“内脏使用度”、个人胰岛素响应或代谢产物量。
+> 食物成分与动画用于教育和辅助理解，不代表个人实际吸收量、血糖变化、器官功能或疾病风险，也不能替代个体化诊疗建议。
 
-当前开发分支已完成 [v4 胰腺协作与整餐报告](docs/pancreas-education-v4.md) 与尿酸焦点的最终自动化验收：iPhone 17 Pro / iOS 26.5 共通过 39 项测试（34 项单元测试、5 项 UI 测试），0 失败、0 跳过，仍待用户体验确认。2026-09-08 新增“关注尿酸”画布入口与报告焦点，说明嘌呤、肾脏排泄及饮水边界，并为馒头数据建立来源审计；这不表示全部食物数据已核实或项目已经发布。相关清单见 [尿酸科普与馒头来源口径](docs/testing-urate-v4.md) 与 [后续工作记录](docs/continuation.md)。以下画布截图保留 v3 视觉基线；[v4 报告](Design/Anatomy/v4/previews/pork-bun-report.png)、[作用讲解](Design/Anatomy/v4/previews/pancreas-process.png)、[胰腺入口](Design/Anatomy/v4/previews/pancreas-focus.png) 与 [尿酸数据审计](docs/food-data-and-urate-audit.md) 可单独查看。
+## 项目状态
 
-当前v5食物库保留原有12种并新增20种，共32项目录；新增14种具备可用数值来源，另6种（肉末茄子盖饭、蛋炒饭、牛肉粿条、鸡公煲、原味鸡、新疆炒米粉）仍待精确来源或做法确认，禁止数值预演。新增中文搜索、来源与参考边界、未知数据提示。2026-09-09共48项测试均有通过记录（41单元、7界面；全量46通过加修正后2项定向复测，App代码未变），已安装iPhone17Pro并检查截图。详见 [扩展检查点](docs/food-expansion-v5.md)、[来源表](docs/food-expansion-v5-sources.md) 与 [手动验收](docs/testing-food-expansion-v5.md)。这不表示20项新增食品的营养资料全部完成，也不代表已发布。
+截至 2026-09-23，开发分支为 `feature/pancreas-education`，最近一次功能验收对应代码提交 `2f51672`。2026-09-21 的记录显示该版本在 iPhone 17 Pro / iOS 26.5 模拟器构建运行成功，并完成项目维护者的手动功能验收；本阶段自动化测试尚未运行。
 
-## 界面预览
+这不是完整发布验收或医学有效性验证。当前测试与发布缺口见 [项目状态](docs/project-status.md) 和 [发布准备](docs/release-readiness.md)。仓库名为 **FoodJournal**，工程与应用名称为 **FoodJourney**。
 
-当前工作区另含 [v7可选学习主题与器官小结](docs/preferences-and-organ-summary-v7.md)，已修改代码、尚未构建或运行验收。按用户约定由用户运行测试，下面v6验证记录只是历史基线。
+## 可以体验什么
 
-v6 [餐食矩阵与10种上限](docs/meal-matrix-v6.md) 已验证并安装iPhone17Pro：52项均有通过记录（全量51通过，1项重播等待超时后单项复测通过；44单元＋8界面）。可查看 [合并水饺成分表](Design/Anatomy/v6/previews/dumplings-1000g-merged-matrix.png) 与 [静态胰腺说明](Design/Anatomy/v6/previews/pancreas-static-three-steps.png)。用户体验仍待确认。
+- **选择食物**：最近使用 3 种食物和完整目录搜索；32 个公共内部条目中，27 个可选择，5 个待补条目不进入选食列表。
+- **按份预演**：提供 50、100、200、300、500 g 选项，逐份播放消化示意；重播不会重复计入本餐。
+- **探索器官**：点击器官、气泡或名称查看过程说明，聚焦时仍可观察食物流动。
+- **查看整餐**：汇总全部已加入份量，按配方版本合并成分、显示主要贡献来源，并保留逐份删除与重置。
+- **维护自建食物**：公共库只读；自建食物可在本机新增、修改和删除，加入本餐时保存成分快照。
+- **选择学习主题**：按关注主题查看相关成分与科普解释；饮水背景可选，不参与嘌呤合计或风险计算。
+
+每餐按食物目录身份最多 10 种，已有种类可以追加份量。当前餐食是临时预演会话，不提供历史饮食档案。
+
+## 视觉预览
+
+以下截图来自 v3 历史版本，用于说明器官画布的视觉方向；其中食物入口和部分文案已更新，不代表当前完整界面。
 
 <p>
-  <img src="Design/Anatomy/v3/previews/installed-app.png" alt="中央消化道与左右器官气泡" width="280" />
-  <img src="Design/Anatomy/v3/previews/chicken200g-callouts.png" alt="鸡胸肉 200g 预演完成后的器官说明" width="280" />
+  <img src="Design/Anatomy/v3/previews/installed-app.png" alt="历史版本的中央消化道与器官气泡" width="280" />
+  <img src="Design/Anatomy/v3/previews/chicken200g-callouts.png" alt="历史版本鸡胸肉预演后的器官说明" width="280" />
 </p>
 
-当前视觉基线：中央消化道、10 个器官气泡、横向折线连接，以及可点击聚焦的独立器官。截图来自 iPhone 17 Pro 模拟器。
+更多设计资产见 [器官素材说明](Design/Anatomy/v3/README.md) 和 [图标说明](Design/AppIcon/v2/README.md)。
 
-## 已实现功能
+## 数据如何解释
 
-- **食物与份量选择**：内置常见食物，支持50g、100g、200g、300g、500g单份预演；每餐最多合并后10种食品，已有种类可继续追加。
-- **消化旅程动画**：食物沿消化道运动，逐份串行播放；聚焦器官时仍可观察下游食物轨迹。
-- **器官交互**：点击器官、左右气泡或器官名称，查看对应的过程、结果与资料来源。
-- **本份结果**：预演完成后在画布显示成分与典型去向，完整小结可手动打开；重播不会重复计入食物。
-- **连续进食会话**：支持食物记录、删除与重置，保留消化预演、代谢报告、我三个页面。
-- **本地偏好**：首次引导与关注主题保存在设备本地。
-- **矩阵报告**：同一目录食品的多次加入合并为一张成分表，原始记录仍可逐次删除；报告基于矩阵合计解释营养物质，不逐菜套用规则。
-- **胰腺作用讲解**：帮助消化、血糖调节两种入口，静态三步阅读；移除只轮换高亮的播放按钮，不再以器官百分比表示个人代谢能力。
-- **尿酸教育焦点**：从画布和报告进入嘌呤—尿酸—肾脏排泄的定性说明；引用 MedlinePlus、国家卫健委等资料，不把食物成分换算为个人血尿酸或固定排泄量。
+数值按食物每 100 g 成分与所选份量换算，不是对身体的测量。公共食物的做法、样本和来源口径可能不同，并非全部数据都已完成逐项复核。
 
-## 开发环境
+- “未提供”“明确为 0”和“微量”分别处理；缺失值不补成 0。
+- 部分覆盖的乳糖、嘌呤只展示已有记录的小计，并说明缺项。
+- 脂肪 70 g、碳水 260 g、热量 2,000 kcal 是成人每日食品标签参考量，不是个人目标或单餐上限。
+- 脂肪达到该全天对照量时的追加提示是本项目制定的产品规则，不是来源发布的单餐医学分级。
+- 当前不预测个人血糖、血尿酸、胰岛素分泌或器官代谢能力。
 
-| 项目 | 当前配置 |
+规则与来源见 [整餐关注分析](docs/meal-focus-v10.md)、[食物成分来源](docs/food-composition-v8.md) 和 [数据审计](docs/food-data-and-urate-audit.md)。
+
+## 本机数据
+
+无需后端服务或 API Key。当前没有账号、云同步或 HealthKit 接入，也不采集疾病问卷。
+
+| 数据 | 保存方式 |
 | --- | --- |
-| 开发工具 | Xcode 26.5 |
-| 部署目标 | iOS 26.5 |
-| 语言与界面 | Swift（Swift 5 语言模式）、SwiftUI、Canvas |
-| 主要结构 | MVVM，Observation；部分旧页面保留 Combine 写法 |
-| 测试 | XCTest 单元测试与 UI 自动化 |
-| 已验证设备 | iPhone 17 Pro 模拟器，iOS 26.5 |
+| 公共食物与来源 | 随应用打包的 Swift 数据 |
+| 自建食物与最近使用 | App 沙盒内的 JSON 文件 |
+| 引导状态、关注主题与饮水选项 | 本机 UserDefaults |
+| 本餐份量与报告 | 当前进程内存，不保存为跨启动历史 |
 
-部署目标为iOS26.5；本轮不支持更低版本，历史文档中的iOS17不是当前承诺。模拟器运行成功不等同于全部真机、iPad和大字体验收。
+重置本餐不会删除自建食物。卸载可能导致本机数据丢失，当前没有应用内导出、恢复或云备份功能。完整存储边界见 [项目状态](docs/project-status.md#数据与存储)。
 
 ## 本地运行
 
-1. 安装 Xcode 26.5 与 iOS 26.5 Simulator Runtime。
-2. 使用有仓库访问权限的 GitHub 账号克隆项目：
+| 项目 | 配置或验证范围 |
+| --- | --- |
+| 工具 | Xcode 26.5、iOS 26.5 Simulator Runtime |
+| 部署目标 | iOS 26.5 |
+| 实现 | Swift、SwiftUI、Canvas；MVVM 与 Observation |
+| 验证设备 | 主要为 iPhone 17 Pro 模拟器 |
+| 测试框架 | XCTest 单元测试与 UI 测试 |
 
-   ```sh
-   git clone https://github.com/ZHERLOCK0213/FoodJournal.git
-   cd FoodJournal
-   open FoodJourney.xcodeproj
-   ```
+```sh
+git clone https://github.com/ZHERLOCK0213/FoodJournal.git
+cd FoodJournal
+git switch feature/pancreas-education
+open FoodJourney.xcodeproj
+```
 
-3. 在 Xcode 中选择 **FoodJourney** Scheme 和 **iPhone 17 Pro** 模拟器，按 `⌘R` 运行。
-4. 如需运行到真机，在 **Signing & Capabilities** 中选择自己的开发团队，并按需调整 Bundle Identifier。
+在 Xcode 中选择 **FoodJourney** Scheme 和 **iPhone 17 Pro** 模拟器，按 `⌘R` 运行。真机运行需要配置自己的开发团队与签名。
 
-无需后端服务或 API Key。首次普通启动会显示引导问卷；UI 测试使用 `-uiTesting` 启动参数跳过引导，不读取或改写设备上已有的偏好。
-
-## 构建与测试
-
-在仓库根目录执行：
+如需命令行构建，在仓库根目录执行：
 
 ```sh
 xcodebuild -project FoodJourney.xcodeproj -scheme FoodJourney \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' build
-
-xcodebuild -project FoodJourney.xcodeproj -scheme FoodJourney \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
 ```
 
-如果安装了多个同名模拟器，可使用 `xcrun simctl list devices available` 查找设备，并将 destination 改为 `platform=iOS Simulator,id=<设备 UUID>`。
+当前存在过期测试断言，部分单元测试仍使用默认本机存储。运行回归前请先阅读 [开发流程](docs/development-workflow.md#验证与测试隔离)，使用独立测试数据与设备；历史测试数量不代表当前套件全部通过。
 
-**验证记录（2026-09-08）**：v3 基线通过 22 项测试；v4 与尿酸焦点最终在 iPhone 17 Pro / iOS 26.5 通过 39 项测试（34 项单元测试、5 项 UI 测试），0 失败、0 跳过，覆盖红烧肉＋馒头的成分累加、来源口径、尿酸教育焦点、旧容量上限诊断、两种胰腺作用和报告交互。该记录不代表生理模型经过医学验证，也不是当前仓库的持续集成状态。
-
-## 目录结构
+## 代码与文档导航
 
 ```text
-FoodJourney.xcodeproj/    Xcode 工程
-FoodJourney/
-  Models/                食物、器官素材、气泡布局与本份科普结果
-  ViewModels/            会话状态与动画推进
-  Views/                 消化预演、报告、引导与设置等界面
-  Services/              食物数据库、动画与历史代谢引擎
-  Assets.xcassets/        App 图标与资源
-  Resources/             主题
+FoodJourney/             SwiftUI 应用、数据模型与本机存储
 FoodJourneyTests/        单元测试
-FoodJourneyUITests/      UI 自动化
-Design/                  版本化矢量素材、PNG 与截图
-docs/                    产品、设计决策与研究记录
-scripts/                 器官与图标素材导出脚本
+FoodJourneyUITests/      界面测试
+FoodJourney.xcodeproj/   Xcode 工程
+Design/                 器官、图标及历史截图
+docs/                   产品规格、版本说明、来源与开发记录
+scripts/                器官和图标素材导出脚本
 ```
 
-## 内容与数据边界
+- [产品规格](docs/PRD.md)：当前功能、输入输出与验收边界。
+- [项目概览](docs/project-brief.md)：目标、架构与学习实践方向。
+- [项目状态](docs/project-status.md)：验证记录、已知限制与数据路径。
+- [路线图](docs/project-dashboard.md)：候选阶段与完成标准。
+- [贡献指南](CONTRIBUTING.md)：问题报告、变更与资料要求。
+- [开发流程](docs/development-workflow.md)：从问题到实现、验证和交付。
+- [变更日志](docs/CHANGELOG.md) 与 [开发验证记录](docs/development-history.md)：历史演进。
 
-- 新画布中的食物、蛋白质、脂肪等克数来自内置食物数据与所选份量，**不等于实际消化、吸收或分泌量**。
-- 肝脏产物量和肾脏排出量显示“未估算”；胰腺气泡介绍消化酶与胰岛素，详细说明明确不估算个人分泌量。
-- 当前气泡说明面向**最后一份食物**，还不是整餐混合食物的动态生理模型。
-- 已复现旧模型达到容量上限后数值停止增加；新报告直接汇总食物输入，不受这一上限影响。仍不能断言上限是用户原反馈的唯一原因。详细混合餐生理模拟及食物数据来源仍待完善。
-- 科普内容优先参考 [NIDDK 消化系统说明](https://www.niddk.nih.gov/health-information/digestive-diseases/digestive-system-how-it-works) 与 [NIDDK 肾脏说明](https://www.niddk.nih.gov/health-information/kidney-disease/kidneys-how-they-work)；尿酸焦点另见 [馒头数据与尿酸科普审计](docs/food-data-and-urate-audit.md)，其中记录了 [CFS 营养资料查询系统](https://www.cfs.gov.hk/tc_chi/nutrient/) 对中国疾控中心营养与食品安全所 CFC2002Ed2 数据的出处。外部参考图片不作为项目原创素材。
+## 开放与复用计划
 
-## 隐私与开发方向
-
-当前无账号系统、后端、云同步或 HealthKit 接入。现有引导包含健康关注与慢性病选项，答案通过 `UserDefaults` 存在设备本地；问卷措辞和历史报告的个人化表述仍需收敛到科普用途。
-
-接下来先完成 v4 用户验收，再补齐食物数据来源、隐私材料、兼容性与真机体验验证。发布准备条件见 [发布门槛清单](docs/release-readiness.md)，当前未提审。
-
-## 项目文档
-
-- [项目驾驶舱与下一步](docs/project-dashboard.md)
-- [项目书](docs/project-brief.md)
-- [视觉方向](docs/visual-direction.md)
-- [v3 器官与气泡实现说明](Design/Anatomy/v3/README.md)
-- [设计决策](docs/design-decisions.md)
-- [历史开发日志](docs/CHANGELOG.md)
-
-历史文档可能保留早期方案，当前功能与限制以本 README、最新驾驶舱及实际代码为准。
+项目正在整理面向公众的资料，并评估未来开源。当前尚未选定开源许可证；代码、数据引用和第三方参考素材的授权范围仍需分别梳理，不能把仓库可访问等同于所有内容已获统一开放许可。正式开源范围和许可将另行公布。

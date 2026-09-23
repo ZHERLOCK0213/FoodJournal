@@ -1,8 +1,8 @@
 # v3 · 中央消化道与左右气泡
 
-根据用户手绘草图（2026-09-07）推进此前暂停的第 2、3 项。开发验证设备改为 iPhone 17 Pro，设备标识 `292F9CC0-8837-486C-AA0E-B1DCEDF245BE`。
+2026-09-07 的历史设计版本，以中央消化道、左右器官说明气泡和局部剖面为核心。本目录的素材和模拟器截图记录该阶段实现，不代表当前应用界面的全部内容；最新状态见 [项目状态](../../../docs/project-status.md)。
 
-## 本轮布局
+## 布局设计
 
 - 主画布不再绘制头顶、眼睛、完整躯干、手臂和大腿，仅保留口部/颈部局部轮廓与口腔至肛门的消化道。
 - 器官形状、真实点击路径和已下移的肾脏保持不变。肾脏仍在后层，点击时显露。
@@ -13,31 +13,34 @@
 
 ## 数据边界
 
-草图中的手写数量仅作为布局示例，没有当作医学公式。
+设计草图中的数量仅用于布局示例，没有作为医学公式。
 
 - 口腔/食管显示本份食物量；胃显示本份蛋白质，十二指肠/胆囊显示本份脂肪，小肠显示部分宏量营养，大肠显示本份纤维。
-- 上述数值来自当前食物成分乘以份量，**不是某器官实际消化或吸收的量**。内置成分数据仍待统一校核。
-- 肝脏产物量、胰腺分泌量、肾脏排出量标为「未估算」。本轮不启用旧的器官能力/产物量模型，不声称有个人代谢测量。
-- 科普过程仍沿用已查阅的 NIDDK 来源；本轮主要变更呈现方式，没有新增生理定量模型。
+- 上述数值来自食物成分乘以份量，**不是某器官实际消化或吸收的量**。该阶段尚未完成内置成分的统一校核。
+- 该阶段以「未估算」标识肝脏产物量、胰腺分泌量、肾脏排出量；后续文案有所调整。不启用旧的器官能力/产物量模型，不声称有个人代谢测量。
+- 科普过程参考 [NIDDK 消化系统资料](https://www.niddk.nih.gov/health-information/digestive-diseases/digestive-system-how-it-works) 与 [肾脏资料](https://www.niddk.nih.gov/health-information/kidney-disease/kidneys-how-they-work)，该阶段主要变更呈现方式，没有新增生理定量模型。
 
 ## 实现与素材
 
-`AnatomyCalloutLayout` 统一控制布局、折线和坐标转换。App 仍使用 SwiftUI Canvas；器官独立 SVG / PNG 从同源路径导出。旧成人全身路径保留供历史素材/旧视图使用，不在新主画布绘制。
+`AnatomyCalloutLayout` 统一控制布局、折线和坐标转换。App 使用 SwiftUI Canvas；器官独立 SVG / PNG 从同源路径导出。旧成人全身路径保留供历史素材/旧视图使用，不在该版本主画布绘制。
+
+在安装 Xcode 命令行工具的 macOS 上，从仓库根目录执行：
 
 ```sh
-swiftc FoodJourney/Models/AnatomyArtwork.swift scripts/export-anatomy.swift -o /private/tmp/foodjourney-export-anatomy
-/private/tmp/foodjourney-export-anatomy "$PWD/Design/Anatomy/v3" --cutaway
+mkdir -p build
+swiftc FoodJourney/Models/AnatomyArtwork.swift scripts/export-anatomy.swift -o build/export-anatomy
+build/export-anatomy "$PWD/Design/Anatomy/generated-cutaway" --cutaway
 ```
 
-注册坐标保留 320 × 440，屏幕布局使用其中 x=86、y=48、宽146、高340 的局部区域。SVG 是中央器官素材，不包含动态消息气泡；完整 UI 以模拟器截图为准。
+该阶段注册坐标为 320 × 440，屏幕布局使用其中 x=86、y=48、宽146、高340 的局部区域。SVG 是中央器官素材，不包含动态消息气泡；历史完整 UI 见下方截图。导出命令使用当前源码，写入独立目录，不保证重现 v3 历史快照。
 
-## 验证状态
+## 历史验证记录
 
-2026-09-07：iPhone 17 Pro 两轮完整测试均通过，最终版本 22 项测试（19 单元 + 3 UI），零失败。覆盖气泡不重叠、折线正交且落在对应器官、坐标转换与点击、成分份量、聚焦、鸡胸肉 200g 完成气泡、手动小结与重播、米饭报告导航。
+2026-09-07：iPhone 17 Pro 模拟器两轮测试均通过，该阶段最终版本 22 项测试（19 单元 + 3 UI），零失败。覆盖气泡不重叠、折线正交且落在对应器官、坐标转换与点击、成分份量、聚焦、鸡胸肉 200g 完成气泡、手动小结与重播、米饭报告导航。
 
-最终结果包：`/private/tmp/foodjourney-callouts-17pro-2.xcresult`。已检查实际截图并修复气泡切换文字重叠、小肠两行成分被压缩的问题；简短结果标签允许省略，点击查看完整说明。
+当时通过截图检查修复了气泡切换文字重叠、小肠两行成分被压缩的问题；简短结果标签允许省略，点击查看完整说明。
 
 - [中央器官与左右气泡全貌](previews/full-layout.png)
 - [鸡胸肉 200g 完成后的数据气泡](previews/chicken200g-callouts.png)
 
-布局单测覆盖 375 / 402 / 440 点宽度；完整 UI 流程当前只在 iPhone 17 Pro 验证。视觉风格仍待用户验收，测试通过不等于生理定量模型获得验证。
+该阶段布局单测覆盖 375 / 402 / 440 点宽度；完整 UI 流程仅在 iPhone 17 Pro 模拟器验证。本次文档整理未重新执行测试；这些历史结果不代表当前版本已通过全设备、无障碍或生理定量模型验证。后续变化见 [开发历史](../../../docs/development-history.md)。
