@@ -2,7 +2,7 @@
 
 日期：2026-09-06
 
-本图采用的大头、短躯干比例未被后续设计采用。后续方向保留成年人的头身比例，以圆润简化表达器官形状。成人全身方案见 [器官素材 v1](../../Design/Anatomy/v1/README.md)，局部剖面方案见 [器官素材 v3](../../Design/Anatomy/v3/README.md)。这些历史概念图不代表当前应用界面，项目状态见 [项目状态](../project-status.md)。
+本图采用的大头、短躯干比例未被后续设计采用。后续方向保留成年人的头身比例，以圆润简化表达器官形状。成人全身方案见 [器官素材 v1](../../../Design/Anatomy/v1/README.md)，局部剖面方案见 [器官素材 v3](../../../Design/Anatomy/v3/README.md)。这些历史概念图不代表当前应用界面，项目状态见 [项目状态](../../project-status.md)。
 
 输出：[Q 版人体概念图](anatomy-direction-v3-chibi.png)
 

@@ -1,6 +1,8 @@
 # v4 · 胰腺协作与整餐成分报告
 
-2026-09-07 历史版本记录。v6 后讲解已改为静态三步，下文保留 v4 的设计与验证范围；当前状态见 [项目状态](project-status.md)。
+> 阶段档案：胰腺外分泌与内分泌的教育边界继续适用；该阶段的播放交互已被后续静态说明及器官聚焦取代。 当前契约见 [产品规格](../../PRD.md)，验证范围见 [项目状态](../../project-status.md)。
+
+2026-09-07 历史版本记录。v6 后讲解已改为静态三步，下文保留 v4 的设计与验证范围；当前状态见 [项目状态](../../project-status.md)。
 
 ## 问题背景
 
@@ -27,7 +29,7 @@
 - [NIDDK：What Is Diabetes](https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes)：胰腺制造胰岛素，帮助身体细胞利用葡萄糖。
 - [NIDDK：胰岛素抵抗与糖尿病前期](https://www.niddk.nih.gov/health-information/diabetes/overview/what-is-diabetes/prediabetes-insulin-resistance)：细胞对胰岛素的反应涉及肌肉、脂肪、肝脏等，不能只看进食量当作个人反应。
 
-2026-09-07 查阅。以上资料支持一般机制，不支持用食物克重推算个人激素量，也不替内置食物数据背书。当时的食物数据、引导和隐私准备后续另行演进，当前发布条件见 [发布准备门槛](release-readiness.md)。
+2026-09-07 查阅。以上资料支持一般机制，不支持用食物克重推算个人激素量，也不替内置食物数据背书。当时的食物数据、引导和隐私准备后续另行演进，当前发布条件见 [发布准备门槛](../../release-readiness.md)。
 
 ## 验收
 

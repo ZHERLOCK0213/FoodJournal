@@ -43,4 +43,4 @@ build/export-anatomy "$PWD/Design/Anatomy/generated-cutaway" --cutaway
 - [中央器官与左右气泡全貌](previews/full-layout.png)
 - [鸡胸肉 200g 完成后的数据气泡](previews/chicken200g-callouts.png)
 
-该阶段布局单测覆盖 375 / 402 / 440 点宽度；完整 UI 流程仅在 iPhone 17 Pro 模拟器验证。本次文档整理未重新执行测试；这些历史结果不代表当前版本已通过全设备、无障碍或生理定量模型验证。后续变化见 [开发历史](../../../docs/development-history.md)。
+该阶段布局单测覆盖 375 / 402 / 440 点宽度；完整 UI 流程仅在 iPhone 17 Pro 模拟器验证。本次文档整理未重新执行测试；这些历史结果不代表当前版本已通过全设备、无障碍或生理定量模型验证。后续变化见 [开发历史](../../../docs/history/development-history.md)。

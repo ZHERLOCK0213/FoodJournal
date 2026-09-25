@@ -2,7 +2,7 @@
 
 日期：2026-09-06
 
-使用 ImageGen 编辑 v1，探索右侧张口、完整器官展示与透明质感。此文件记录历史概念探索，不代表当前 App 资产或界面；后续实现见 [器官素材 v3](../../Design/Anatomy/v3/README.md)，项目状态见 [项目状态](../project-status.md)。
+使用 ImageGen 编辑 v1，探索右侧张口、完整器官展示与透明质感。此文件记录历史概念探索，不代表当前 App 资产或界面；后续实现见 [器官素材 v3](../../../Design/Anatomy/v3/README.md)，项目状态见 [项目状态](../../project-status.md)。
 
 输出：[简化肠道概念图](anatomy-direction-v2-simplified.png)
 

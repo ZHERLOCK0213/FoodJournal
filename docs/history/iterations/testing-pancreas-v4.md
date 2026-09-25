@@ -1,6 +1,8 @@
 # v4 胰腺协作 · 手动测试清单
 
-历史测试范围：2026-09-07 的 v4 胰腺教育实现，基于 `main` 版本 `d2f1149` 开发。下列播放与暂停行为已在 v6 改为静态讲解；当前状态见 [项目状态](project-status.md)。
+> 阶段档案：本页用于复现当时版本，不是当前完整验收清单；可复用案例需先对照现行行为。 当前契约见 [产品规格](../../PRD.md)，验证范围见 [项目状态](../../project-status.md)。
+
+历史测试范围：2026-09-07 的 v4 胰腺教育实现，基于 `main` 版本 `d2f1149` 开发。下列播放与暂停行为已在 v6 改为静态讲解；当前状态见 [项目状态](../../project-status.md)。
 
 尿酸学习镜头与馒头来源口径的单独验收见 [尿酸科普与馒头来源口径：手动验收](testing-urate-v4.md)。
 
@@ -54,7 +56,7 @@ F 通过
 
 - 旧模型诊断已通过：新会话红烧肉 100g＋馒头 100g 会改变旧胰腺数值；旧能力到上限后，使用度和胰岛素响应可停止增长。因此上限是可复现的误导机制，但尚不能确定是原问题的唯一原因。
 - v4 初始阶段 **32 项通过（28 单元＋4 UI），0 失败、0 跳过**，设备为 iPhone 17 Pro / iOS 26.5 模拟器。此历史记录不代表当前版本全量测试通过。
-- 已检查 [整餐报告截图](../Design/Anatomy/v4/previews/pork-bun-report.png)、[三步讲解截图](../Design/Anatomy/v4/previews/pancreas-process.png) 与 [画布胰腺入口](../Design/Anatomy/v4/previews/pancreas-focus.png)。
+- 已检查 [整餐报告截图](../../../Design/Anatomy/v4/previews/pork-bun-report.png)、[三步讲解截图](../../../Design/Anatomy/v4/previews/pancreas-process.png) 与 [画布胰腺入口](../../../Design/Anatomy/v4/previews/pancreas-focus.png)。
 - 自动化覆盖两个连续 100g 输入、报告更新、两种作用切换、手动选步骤和关闭；播放/暂停观感、复杂状态切换、大字体、减少动态效果与真机未由上述自动化结果覆盖。
 
-测试通过后进入发布准备检查，**不直接等于可提交 App Store**。参见 [发布准备门槛](release-readiness.md)。
+测试通过后进入发布准备检查，**不直接等于可提交 App Store**。参见 [发布准备门槛](../../release-readiness.md)。

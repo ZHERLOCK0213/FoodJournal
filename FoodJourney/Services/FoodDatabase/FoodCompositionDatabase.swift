@@ -1,7 +1,7 @@
 import Foundation
 
 /// Checked 2026-09-10. Exact worksheet rows and rejected mappings are retained in
-/// docs/food-composition-v8.md. These are food references, not personal intake measurements.
+/// docs/reference/food-composition-v8.md. These are food references, not personal intake measurements.
 enum FoodCompositionDatabase {
     private typealias Value = FoodCompositionReference.Value
 

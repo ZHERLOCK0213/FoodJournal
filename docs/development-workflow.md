@@ -12,11 +12,55 @@
 6. **审阅与交付**：核对最终差异，更新相关文档；代码合并与正式发布分别管理。
 7. **复盘**：记录实际效果、剩余问题和可复用知识。
 
+## 三分支流转
+
+长期分支统一使用 `Dev`、`Stage`、`Live`，名称大小写固定。分支记录代码版本；创建分支不会自动建立服务器、测试环境或 App Store 发布流程。
+
+| 分支 | 用途 | 进入条件 |
+| --- | --- | --- |
+| Dev | 日常功能开发、文档和学习迭代 | 小范围修改可以保存为提交，验证范围如实标注 |
+| Stage | 冻结候选版本、回归、TestFlight 与上架准备 | 明确本次范围与提交，已完成必要的基础检查 |
+| Live | 低频更新的稳定基线 | Stage 验收完成，记录已知限制及发布准备状态 |
+
+一般流程为 `Dev → Stage → Live`。Stage 验收期间，Dev 可以继续开发；Stage 只接收本次候选范围内的修复，修复也要回到 Dev。不能为修一个问题把 Dev 尚未验收的新功能一起带入 Stage。
+
+合并时审阅差异并关联验证记录；适合时使用 Pull Request。Live 的紧急修复先复现、修复、验证，再同步回 Stage 与 Dev。不要为了整理分支而重写已有历史。
+
+当前应用尚未上架，Live 最初仅表示既有基线，不表示它已经通过当前发布门槛。正式发布时记录提交、版本号、构建号及实际商店状态，再用版本 tag 固定对应提交；分支更新、上传构建与审核上架分别记录。默认分支建议设为 Live，开发时切到 Dev；迁移完成情况见 [项目状态](project-status.md#分支迁移)。
+
+### 可见性与开源
+
+GitHub 的公开／私有设置作用于整个仓库，不能将同仓库的某个分支设为私有。分支保护约束修改与合并权限，不隐藏代码；规则是否可用取决于仓库和账户方案。[GitHub 仓库说明](https://docs.github.com/en/repositories/creating-and-managing-repositories/about-repositories)
+
+若以后需要“内部开发、公开稳定代码”，应使用私有开发仓库和独立公开仓库，明确发布哪些文件、数据、资产及历史提交。这会增加同步与审阅成本；当前不据此创建第二个仓库或改变可见性。公开前需要审阅历史，不能认为删除当前文件或隐藏分支名称就能隐藏历史内容。[可见性变更说明](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/managing-repository-settings/setting-repository-visibility)
+
+## 当前技术架构
+
+下图包含维护者本地未提交工作区中的提醒模块；远端 `Dev` 尚无这些模块，也未包含新版器官聚焦与大陆每日参考对照。本次文档提交不交付相应功能代码，具体范围见 [产品规格](PRD.md)。
+
+```text
+ContentView
+  ├─ UserPreferences → LearningPreferencesStorage → UserDefaults
+  ├─ MealReminderController
+  │    ├─ MealReminderStorage → UserDefaults
+  │    └─ MealReminderNotifications → iOS 本地通知
+  └─ LiveSessionViewModel
+       ├─ FoodLibrary → FoodLibraryStorage → 本机 JSON
+       ├─ DigestionSession（本餐快照）
+       └─ MealDigestionJourney（当前单份器官解释）
+
+DigestionSession.items → ReportView
+  ├─ MealEducationSummary → MealNutrientMatrix
+  └─ MealFocusAnalysis → MealNutrientMatrix
+```
+
+界面使用 SwiftUI 与 Canvas，当前会话由入口共享。应用本地计算不等于服务端；现版没有网络后端、SQL 数据库或账号系统。器官聚焦和提醒新增源码的运行状态以 [项目状态](project-status.md) 为准。
+
+旧三屏页面、旧代谢引擎与部分容量模型仍保留在源码中，没有接入当前主报告。清理时需核对依赖，不能仅按所在目录判断能否删除。
+
 ## 验证与测试隔离
 
-当前静态检查已发现部分单元测试默认创建 `FoodLibrary()`，调用添加食物后会写入测试设备的最近使用记录。回归前应改为注入 `FoodLibrary(storage: MemoryFoodLibraryStorage())` 或等效隔离实例，并使用独立的测试模拟器。
-
-UI 测试通过 `-uiTesting` 隔离相关本机数据，但这不能自动保证所有单元测试也完成隔离。历史布局测试还包含与当前气泡文案不符的断言，需要先依据产品行为更新。
+涉及存储的单元测试应注入 `FoodLibrary(storage: MemoryFoodLibraryStorage())` 或等效隔离实例，并使用独立测试设备，避免改写个人最近使用记录。UI 测试的 `-uiTesting` 参数不自动保证所有单元测试也完成隔离。运行前应核对断言与现行产品行为，待处理项见 [项目状态](project-status.md#已知限制与待验证事项)。
 
 | 变更 | 必要检查 |
 | --- | --- |
@@ -41,3 +85,7 @@ AI 可以帮助检索、提出方案、编写代码或发现问题。维护者�
 ## 版本与维护
 
 版本说明记录使用者能感知的变化及数据迁移影响。食物或科普内容修正应保留来源与适用范围；本机数据格式变化需要兼容策略。正式发布前使用 [发布准备](release-readiness.md)，当前状态见 [项目状态](project-status.md)。
+
+## 文档维护
+
+文档入口见 [文档目录](README.md)。一次交互修改通常更新 PRD 的行为契约、项目状态的证据与待办、CHANGELOG 的简短记录；只有产品定位、关键取舍或发布门槛变化时才更新对应文档。历史档案保留当时日期、分支和结论，在顶部注明后续替代关系，不把历史测试改写成当前测试。
